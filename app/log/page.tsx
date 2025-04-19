@@ -45,15 +45,19 @@ export default function LogPage() {
 
   async function uploadImage(treeId: string) {
     if (!image) return null;
-    const filename = `${treeId}_${Date.now()}_${image.name}`;
+    const filename = `${treeId}_${Date.now()}_${image.name}`.replace(
+      /\s+/g,
+      "_"
+    );
     const { data, error } = await supabase.storage
-      .from("tree_media")
+      .from("tree-media")
       .upload(filename, image);
     if (error) {
-      alert("ไม่สามารถอัปโหลดรูปภาพได้");
+      console.error("Upload error:", error.message);
+      alert("❌ ไม่สามารถอัปโหลดรูปภาพได้");
       return null;
     }
-    return data.path;
+    return `tree-media/${data.path}`;
   }
 
   async function saveLog() {
