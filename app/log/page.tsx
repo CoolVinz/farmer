@@ -45,19 +45,15 @@ export default function LogPage() {
 
   async function uploadImage(treeId: string) {
     if (!image) return null;
-    const filename = `${treeId}_${Date.now()}_${image.name}`.replace(
-      /\s+/g,
-      "_"
-    );
+    const filename = `${treeId}_${Date.now()}_${image.name}`;
     const { data, error } = await supabase.storage
-      .from("tree-media")
+      .from("tree_media")
       .upload(filename, image);
     if (error) {
-      console.error("Upload error:", error.message);
-      alert("❌ ไม่สามารถอัปโหลดรูปภาพได้");
+      alert("ไม่สามารถอัปโหลดรูปภาพได้");
       return null;
     }
-    return `tree-media/${data.path}`;
+    return data.path;
   }
 
   async function saveLog() {
@@ -83,14 +79,20 @@ export default function LogPage() {
   }
 
   return (
-    <main className="max-w-xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 text-center">
-        ➕ บันทึกข้อมูลต้นไม้
-      </h1>
+    <main className="max-w-xl mx-auto p-6 space-y-5">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">➕ บันทึกข้อมูลต้นไม้</h1>
+        <a
+          href="/"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 transition-all"
+        >
+          🏠 <span className="hidden sm:inline">กลับหน้าหลัก</span>
+        </a>
+      </div>
 
       <label className="block mb-2 font-medium">เลือกต้นไม้</label>
       <select
-        className="w-full border rounded px-3 py-2 mb-4"
+        className="w-full border px-4 py-2 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
         onChange={(e) => setSelectedTree(e.target.value)}
       >
         <option value="">-- กรุณาเลือก --</option>
@@ -103,7 +105,7 @@ export default function LogPage() {
 
       <label className="block mb-2 font-medium">เลือกปุ๋ย</label>
       <select
-        className="w-full border rounded px-3 py-2 mb-4"
+        className="w-full border px-4 py-2 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
         onChange={(e) => setSelectedFertilizer(e.target.value)}
       >
         <option value="">-- ไม่ระบุ --</option>
@@ -116,7 +118,7 @@ export default function LogPage() {
 
       <label className="block mb-2 font-medium">เลือกสารกำจัดศัตรูพืช</label>
       <select
-        className="w-full border rounded px-3 py-2 mb-4"
+        className="w-full border px-4 py-2 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
         onChange={(e) => setSelectedPesticide(e.target.value)}
       >
         <option value="">-- ไม่ระบุ --</option>
@@ -129,7 +131,7 @@ export default function LogPage() {
 
       <label className="block mb-2 font-medium">ชื่อผู้บันทึก</label>
       <select
-        className="w-full border rounded px-3 py-2 mb-4"
+        className="w-full border px-4 py-2 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
         onChange={(e) => setSelectedUser(e.target.value)}
       >
         <option value="">-- ไม่ระบุ --</option>
@@ -142,7 +144,7 @@ export default function LogPage() {
 
       <label className="block mb-2 font-medium">บันทึกหมายเหตุ</label>
       <textarea
-        className="w-full border rounded px-3 py-2 mb-4"
+        className="w-full border px-4 py-2 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-400"
         rows={4}
         value={note}
         onChange={(e) => setNote(e.target.value)}
@@ -151,13 +153,13 @@ export default function LogPage() {
       <label className="block mb-2 font-medium">แนบรูปภาพ</label>
       <input
         type="file"
-        className="w-full mb-4"
+        className="w-full mb-4 bg-white border px-4 py-2 rounded-xl shadow-sm"
         accept="image/*"
         onChange={(e) => setImage(e.target.files?.[0] || null)}
       />
 
       <button
-        className="bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50"
+        className="bg-green-600 text-white px-5 py-2 rounded-xl shadow hover:bg-green-700 transition-all disabled:opacity-50"
         onClick={saveLog}
         disabled={loading}
       >
