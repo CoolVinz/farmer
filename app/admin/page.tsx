@@ -1,7 +1,8 @@
-// app/admin/page.tsx — Admin panel with Home button
+// app/admin/page.tsx — Admin panel (fully regenerated)
 "use client";
 
 import { useEffect, useState } from "react";
+import { Toaster, toast } from "react-hot-toast";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
@@ -9,6 +10,48 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_KEY!
 );
+
+const Section = ({
+  title,
+  items,
+  type,
+  input,
+  setInput,
+  addItem,
+  removeItem,
+}: any) => {
+  return (
+    <div className="mb-8">
+      <h2 className="text-lg font-bold mb-2">{title}</h2>
+      <div className="flex gap-2 mb-3">
+        <input
+          className="border px-3 py-1 rounded w-full"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button
+          onClick={() => addItem(type, input, () => setInput(""))}
+          className="bg-green-600 text-white px-4 py-1 rounded"
+        >
+          เพิ่ม
+        </button>
+      </div>
+      <ul className="list-disc pl-5 space-y-1">
+        {items.map((item: any) => (
+          <li key={item.id} className="flex justify-between items-center">
+            {item.name}
+            <button
+              onClick={() => removeItem(type, item.id)}
+              className="text-red-500 text-sm"
+            >
+              ลบ
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 export default function AdminPage() {
   const [varieties, setVarieties] = useState<any[]>([]);
@@ -40,10 +83,28 @@ export default function AdminPage() {
 
   async function addItem(type: string, value: string, reset: () => void) {
     if (!value) return;
-    const { error } = await supabase.from(type).insert({ name: value });
-    if (!error) {
+
+    // ตรวจสอบชื่อซ้ำก่อน insert
+    const existing = await supabase
+      .from(type)
+      .select("name")
+      .eq("name", value)
+      .maybeSingle();
+    if (existing.data) {
+      toast.error("🚫 รายการนี้มีอยู่แล้ว");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from(type)
+      .insert({ name: value })
+      .select();
+    if (!error && data) {
       reset();
-      fetchAll();
+      if (type === "varieties") setVarieties((prev) => [...prev, ...data]);
+      if (type === "fertilizers") setFertilizers((prev) => [...prev, ...data]);
+      if (type === "pesticides") setPesticides((prev) => [...prev, ...data]);
+      if (type === "plant_diseases") setDiseases((prev) => [...prev, ...data]);
     }
   }
 
@@ -52,78 +113,54 @@ export default function AdminPage() {
     fetchAll();
   }
 
-  const Section = ({ title, items, type, input, setInput }: any) => (
-    <div className="mb-8">
-      <h2 className="text-lg font-bold mb-2">{title}</h2>
-      <div className="flex gap-2 mb-3">
-        <input
-          className="border px-3 py-1 rounded w-full"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-        <button
-          onClick={() => addItem(type, input, () => setInput(""))}
-          className="bg-green-600 text-white px-4 py-1 rounded"
-        >
-          เพิ่ม
-        </button>
-      </div>
-      <ul className="list-disc pl-5 space-y-1">
-        {items.map((item: any) => (
-          <li key={item.id} className="flex justify-between items-center">
-            {item.name}
-            <button
-              onClick={() => removeItem(type, item.id)}
-              className="text-red-500 text-sm"
-            >
-              ลบ
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-
   return (
-    <main className="max-w-2xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">🛠️ หน้าจัดการข้อมูล (Admin)</h1>
-        <a
-          href="/"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 transition-all"
-        >
-          🏠 <span className="hidden sm:inline">กลับหน้าหลัก</span>
-        </a>
-      </div>
+    <>
+      <Toaster position="top-center" />
+      <main className="max-w-2xl mx-auto p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">🛠️ หน้าจัดการข้อมูล (Admin)</h1>
+          <Link href="/" className="text-blue-600 underline">
+            🏠 Home
+          </Link>
+        </div>
 
-      <Section
-        title="🌱 สายพันธุ์ทุเรียน"
-        items={varieties}
-        type="varieties"
-        input={newVariety}
-        setInput={setNewVariety}
-      />
-      <Section
-        title="💊 ปุ๋ย"
-        items={fertilizers}
-        type="fertilizers"
-        input={newFertilizer}
-        setInput={setNewFertilizer}
-      />
-      <Section
-        title="🦟 ยาฆ่าแมลง"
-        items={pesticides}
-        type="pesticides"
-        input={newPesticide}
-        setInput={setNewPesticide}
-      />
-      <Section
-        title="🍂 โรคพืช"
-        items={diseases}
-        type="plant_diseases"
-        input={newDisease}
-        setInput={setNewDisease}
-      />
-    </main>
+        <Section
+          addItem={addItem}
+          removeItem={removeItem}
+          title="🌱 สายพันธุ์ทุเรียน"
+          items={varieties}
+          type="varieties"
+          input={newVariety}
+          setInput={setNewVariety}
+        />
+        <Section
+          addItem={addItem}
+          removeItem={removeItem}
+          title="💊 ปุ๋ย"
+          items={fertilizers}
+          type="fertilizers"
+          input={newFertilizer}
+          setInput={setNewFertilizer}
+        />
+        <Section
+          addItem={addItem}
+          removeItem={removeItem}
+          title="🦟 ยาฆ่าแมลง"
+          items={pesticides}
+          type="pesticides"
+          input={newPesticide}
+          setInput={setNewPesticide}
+        />
+        <Section
+          addItem={addItem}
+          removeItem={removeItem}
+          title="🍂 โรคพืช"
+          items={diseases}
+          type="plant_diseases"
+          input={newDisease}
+          setInput={setNewDisease}
+        />
+      </main>
+    </>
   );
 }
