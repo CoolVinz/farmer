@@ -95,7 +95,7 @@ export default function DashboardPage() {
         </a>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <input
           type="date"
           value={startDate}
@@ -108,6 +108,18 @@ export default function DashboardPage() {
           onChange={(e) => setEndDate(e.target.value)}
           className="border rounded px-4 py-2 w-full"
         />
+      </div>
+
+      <div className="bg-white p-4 rounded-xl shadow">
+        <h2 className="text-lg font-bold mb-2">
+          💰 ยอดรวมต้นทุนในช่วงวันที่เลือก
+        </h2>
+        <p className="text-xl text-amber-600 font-bold">
+          {filteredCosts
+            .reduce((sum, cost) => sum + (cost.amount || 0), 0)
+            .toLocaleString()}{" "}
+          บาท
+        </p>
       </div>
 
       {loading ? (

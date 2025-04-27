@@ -61,14 +61,22 @@ export default function ReportPage() {
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold">📊 รายงานภาพรวมสวนวิสุทธิ์ศิริ</h1>
-        <a
-          href="/"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 transition-all"
-        >
-          🏠 <span className="hidden sm:inline">กลับหน้าหลัก</span>
-        </a>
+        <div className="flex gap-2">
+          <a
+            href="/"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 transition-all"
+          >
+            🏠 <span className="hidden sm:inline">กลับหน้าหลัก</span>
+          </a>
+          <a
+            href="/report/dashboard"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl shadow hover:bg-green-700 transition-all"
+          >
+            📈 ดู Dashboard ต้นทุน
+          </a>
+        </div>
       </div>
 
       {loading ? (
@@ -104,7 +112,15 @@ export default function ReportPage() {
 
       {/* ค่าใช้จ่ายรวม */}
       <section className="mt-8">
-        <h2 className="text-xl font-bold mb-4">💰 สรุปต้นทุนทั้งหมด</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">💰 สรุปต้นทุนทั้งหมด</h2>
+          <a
+            href="/report/cost"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl shadow hover:bg-purple-700 transition-all"
+          >
+            📋 ดูรายละเอียดต้นทุน
+          </a>
+        </div>
         <CostSummary />
       </section>
     </main>

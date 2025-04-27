@@ -10,7 +10,7 @@ export default function LandingPage() {
       <p className="mb-8 text-gray-600">เลือกเมนูที่คุณต้องการใช้งาน</p>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Link href="/log">
+        <Link href="/logs">
           <div className="bg-green-100 hover:bg-green-200 p-6 rounded-xl cursor-pointer">
             <h2 className="text-lg font-semibold">➕ บันทึกข้อมูลต้นไม้</h2>
             <p className="text-sm text-gray-600">เพิ่มข้อมูลปุ๋ย น้ำ รูปภาพ</p>
