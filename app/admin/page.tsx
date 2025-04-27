@@ -63,22 +63,26 @@ export default function AdminPage() {
   const [newFertilizer, setNewFertilizer] = useState("");
   const [newPesticide, setNewPesticide] = useState("");
   const [newDisease, setNewDisease] = useState("");
+  const [activities, setActivities] = useState<any[]>([]);
+  const [newActivity, setNewActivity] = useState("");
 
   useEffect(() => {
     fetchAll();
   }, []);
 
   async function fetchAll() {
-    const [v, f, p, d] = await Promise.all([
+    const [v, f, p, d, a] = await Promise.all([
       supabase.from("varieties").select("*").order("name"),
       supabase.from("fertilizers").select("*").order("name"),
       supabase.from("pesticides").select("*").order("name"),
       supabase.from("plant_diseases").select("*").order("name"),
+      supabase.from("activities").select("*").order("name"),
     ]);
     setVarieties(v.data || []);
     setFertilizers(f.data || []);
     setPesticides(p.data || []);
     setDiseases(d.data || []);
+    setActivities(a.data || []);
   }
 
   async function addItem(type: string, value: string, reset: () => void) {
@@ -105,6 +109,7 @@ export default function AdminPage() {
       if (type === "fertilizers") setFertilizers((prev) => [...prev, ...data]);
       if (type === "pesticides") setPesticides((prev) => [...prev, ...data]);
       if (type === "plant_diseases") setDiseases((prev) => [...prev, ...data]);
+      if (type === "activities") setActivities((prev) => [...prev, ...data]);
     }
   }
 
@@ -119,9 +124,12 @@ export default function AdminPage() {
       <main className="max-w-2xl mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">🛠️ หน้าจัดการข้อมูล (Admin)</h1>
-          <Link href="/" className="text-blue-600 underline">
-            🏠 Home
-          </Link>
+          <a
+            href="/"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 transition-all"
+          >
+            🏠 <span className="hidden sm:inline">กลับหน้าหลัก</span>
+          </a>
         </div>
 
         <Section
@@ -159,6 +167,15 @@ export default function AdminPage() {
           type="plant_diseases"
           input={newDisease}
           setInput={setNewDisease}
+        />
+        <Section
+          addItem={addItem}
+          removeItem={removeItem}
+          title="💼 กิจกรรมค่าใช้จ่าย"
+          items={activities}
+          type="activities"
+          input={newActivity}
+          setInput={setNewActivity}
         />
       </main>
     </>

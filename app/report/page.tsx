@@ -9,6 +9,35 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_KEY!
 );
 
+function CostSummary() {
+  const [costs, setCosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCosts();
+  }, []);
+
+  async function fetchCosts() {
+    const { data } = await supabase.from("tree_costs").select("*");
+    setCosts(data || []);
+    setLoading(false);
+  }
+
+  const totalCost = costs.reduce((sum, c) => sum + (c.amount || 0), 0);
+
+  if (loading)
+    return <p className="text-base">⏳ กำลังโหลดข้อมูลค่าใช้จ่าย...</p>;
+
+  return (
+    <div className="border p-4 rounded-xl bg-white">
+      <h3 className="text-base font-semibold">💸 ค่าใช้จ่ายรวม (บาท)</h3>
+      <p className="text-lg font-bold text-amber-600">
+        {totalCost.toLocaleString()}
+      </p>
+    </div>
+  );
+}
+
 export default function ReportPage() {
   const [trees, setTrees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +101,12 @@ export default function ReportPage() {
           </div>
         </div>
       )}
+
+      {/* ค่าใช้จ่ายรวม */}
+      <section className="mt-8">
+        <h2 className="text-xl font-bold mb-4">💰 สรุปต้นทุนทั้งหมด</h2>
+        <CostSummary />
+      </section>
     </main>
   );
 }
