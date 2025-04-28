@@ -58,31 +58,36 @@ export default function AdminPage() {
   const [fertilizers, setFertilizers] = useState<any[]>([]);
   const [pesticides, setPesticides] = useState<any[]>([]);
   const [diseases, setDiseases] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [activitiesCost, setActivitiesCost] = useState<any[]>([]);
 
   const [newVariety, setNewVariety] = useState("");
   const [newFertilizer, setNewFertilizer] = useState("");
   const [newPesticide, setNewPesticide] = useState("");
   const [newDisease, setNewDisease] = useState("");
-  const [activities, setActivities] = useState<any[]>([]);
+
   const [newActivity, setNewActivity] = useState("");
+  const [newActivityCost, setNewActivityCost] = useState("");
 
   useEffect(() => {
     fetchAll();
   }, []);
 
   async function fetchAll() {
-    const [v, f, p, d, a] = await Promise.all([
+    const [v, f, p, d, a, ac] = await Promise.all([
       supabase.from("varieties").select("*").order("name"),
       supabase.from("fertilizers").select("*").order("name"),
       supabase.from("pesticides").select("*").order("name"),
       supabase.from("plant_diseases").select("*").order("name"),
       supabase.from("activities").select("*").order("name"),
+      supabase.from("activities_cost").select("*").order("name"),
     ]);
     setVarieties(v.data || []);
     setFertilizers(f.data || []);
     setPesticides(p.data || []);
     setDiseases(d.data || []);
     setActivities(a.data || []);
+    setActivitiesCost(ac.data || []);
   }
 
   async function addItem(type: string, value: string, reset: () => void) {
@@ -110,6 +115,8 @@ export default function AdminPage() {
       if (type === "pesticides") setPesticides((prev) => [...prev, ...data]);
       if (type === "plant_diseases") setDiseases((prev) => [...prev, ...data]);
       if (type === "activities") setActivities((prev) => [...prev, ...data]);
+      if (type === "activities_cost")
+        setActivitiesCost((prev) => [...prev, ...data]);
     }
   }
 
@@ -171,11 +178,21 @@ export default function AdminPage() {
         <Section
           addItem={addItem}
           removeItem={removeItem}
-          title="💼 กิจกรรมค่าใช้จ่าย"
+          title="⭐️ กิจกรรมของสวน"
           items={activities}
           type="activities"
           input={newActivity}
           setInput={setNewActivity}
+        />
+
+        <Section
+          addItem={addItem}
+          removeItem={removeItem}
+          title="💼 กิจกรรมค่าใช้จ่าย"
+          items={activitiesCost}
+          type="activities_cost"
+          input={newActivityCost}
+          setInput={setNewActivityCost}
         />
       </main>
     </>
