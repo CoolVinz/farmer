@@ -1,7 +1,11 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    domains: [
+      // replace with your Supabase project host, WITHOUT protocol
+      "sngxobxqxklzjyrvwqor.supabase.co",
+    ],
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
