@@ -1,4 +1,4 @@
-// app/logs/page.tsx — Logs List using Section Components
+// app/logs/page.tsx — Logs List with robust client-side tree lookup
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,20 +17,19 @@ const supabase = createClient(
 const PAGE_SIZE = 5;
 
 export default function LogsPage() {
-  // --- Single logs state ---
+  // Single logs state
   const [singleLogs, setSingleLogs] = useState<SingleLog[]>([]);
   const [singlePage, setSinglePage] = useState(1);
   const [singleTotal, setSingleTotal] = useState(0);
-  // --- Batch logs state ---
+  // Batch logs state
   const [batchLogs, setBatchLogs] = useState<BatchLog[]>([]);
   const [batchPage, setBatchPage] = useState(1);
   const [batchTotal, setBatchTotal] = useState(0);
-  // --- Cost logs state ---
+  // Cost logs state
   const [costLogs, setCostLogs] = useState<CostLog[]>([]);
   const [costPage, setCostPage] = useState(1);
   const [costTotal, setCostTotal] = useState(0);
 
-  // Kick off fetching whenever page numbers change
   useEffect(() => {
     fetchSingleLogs();
   }, [singlePage]);
@@ -41,13 +40,17 @@ export default function LogsPage() {
     fetchCostLogs();
   }, [costPage]);
 
-  // 1) Fetch page of single-tree logs and merge with trees table
+  // 1) Fetch single-tree logs and then merge tree info client-side
   async function fetchSingleLogs() {
     const from = (singlePage - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
-    // a) fetch this page of logs
-    const { data: logs, count } = await supabase
+    // a) Pull this page of logs (no join)
+    const {
+      data: logs,
+      count,
+      error,
+    } = await supabase
       .from("tree_logs")
       .select(
         "id, tree_id, log_date, notes, activity_type, health_status, fertilizer_type, image_path",
@@ -56,58 +59,98 @@ export default function LogsPage() {
       .is("batch_id", null)
       .order("log_date", { ascending: false })
       .range(from, to);
+
+    if (error) {
+      console.error("fetchSingleLogs error", error);
+      return;
+    }
     if (!logs) return;
     if (count !== null) setSingleTotal(count);
 
-    // b) fetch all trees once
+    // b) Fetch ALL trees once (table is small)
     const { data: trees } = await supabase
       .from("trees")
       .select("id, location_id, tree_number, variety");
+
+    // c) Build a lookup mapping by id, by tree_number, and by combo (location_id+tree_number)
     const treeMap: Record<
       string,
       { location_id: string; tree_number: string; variety: string }
     > = {};
     trees?.forEach((t) => {
+      const combo = `${t.location_id}${t.tree_number}`;
       treeMap[t.id] = {
+        location_id: t.location_id,
+        tree_number: t.tree_number,
+        variety: t.variety,
+      };
+      treeMap[t.tree_number] = {
+        location_id: t.location_id,
+        tree_number: t.tree_number,
+        variety: t.variety,
+      };
+      treeMap[combo] = {
         location_id: t.location_id,
         tree_number: t.tree_number,
         variety: t.variety,
       };
     });
 
-    // c) merge and set state
-    const formatted: SingleLog[] = logs.map((l) => ({
-      id: l.id,
-      tree_id: l.tree_id,
-      log_date: l.log_date,
-      notes: l.notes,
-      activity_type: l.activity_type,
-      health_status: l.health_status,
-      fertilizer_type: l.fertilizer_type,
-      image_path: l.image_path,
-      tree: treeMap[l.tree_id] || {
+    // d) Merge tree info into each log
+    const formatted: SingleLog[] = logs.map((l) => {
+      const info = treeMap[l.tree_id] || {
         location_id: "–",
         tree_number: "–",
         variety: "–",
-      },
-    }));
+      };
+      return {
+        id: l.id,
+        tree_id: l.tree_id,
+        log_date: l.log_date,
+        notes: l.notes,
+        activity_type: l.activity_type,
+        health_status: l.health_status,
+        fertilizer_type: l.fertilizer_type,
+        image_path: l.image_path,
+        tree: info,
+      };
+    });
+
     setSingleLogs(formatted);
   }
 
-  // 2) Fetch batch-of-plot logs
+  // 2) Fetch batch-of-plot logs (flatten activities array)
   async function fetchBatchLogs() {
     const from = (batchPage - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
-    const { data, count } = await supabase
-      .from<BatchLog>("batch_logs")
+    const { data, count, error } = await supabase
+      .from("batch_logs")
       .select("id, plot_id, log_date, notes, activities(name)", {
         count: "exact",
       })
       .order("log_date", { ascending: false })
       .range(from, to);
-    if (data) setBatchLogs(data);
+
+    if (error) {
+      console.error("fetchBatchLogs error", error);
+      return;
+    }
+    if (!data) return;
     if (count !== null) setBatchTotal(count);
+
+    const formatted: BatchLog[] = data.map((b: any) => ({
+      id: b.id,
+      plot_id: b.plot_id,
+      log_date: b.log_date,
+      notes: b.notes,
+      activities:
+        Array.isArray(b.activities) && b.activities.length > 0
+          ? { name: b.activities[0].name }
+          : undefined,
+    }));
+
+    setBatchLogs(formatted);
   }
 
   // 3) Fetch cost logs
@@ -115,15 +158,21 @@ export default function LogsPage() {
     const from = (costPage - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
-    const { data, count } = await supabase
-      .from<CostLog>("tree_costs")
+    const { data, count, error } = await supabase
+      .from("tree_costs")
       .select("id, cost_date, activity_type, target, amount, notes", {
         count: "exact",
       })
       .order("cost_date", { ascending: false })
       .range(from, to);
-    if (data) setCostLogs(data);
+
+    if (error) {
+      console.error("fetchCostLogs error", error);
+      return;
+    }
+    if (!data) return;
     if (count !== null) setCostTotal(count);
+    setCostLogs(data as CostLog[]);
   }
 
   // Compute total pages
@@ -164,23 +213,19 @@ export default function LogsPage() {
         </div>
       </div>
 
-      {/* Single-Log Section */}
+      {/* Sections */}
       <SingleLogSection
         logs={singleLogs}
         page={singlePage}
         totalPages={totalSinglePages}
         onPageChange={setSinglePage}
       />
-
-      {/* Batch-Log Section */}
       <BatchLogSection
         logs={batchLogs}
         page={batchPage}
         totalPages={totalBatchPages}
         onPageChange={setBatchPage}
       />
-
-      {/* Cost-Log Section */}
       <CostLogSection
         logs={costLogs}
         page={costPage}
