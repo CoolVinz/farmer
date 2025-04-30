@@ -78,12 +78,12 @@ export default function GalleryPage() {
               className="rounded-xl overflow-hidden shadow hover:shadow-lg transition bg-white relative"
             >
               <img
-                src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${log.image_path}`}
+                src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/tree-media/${log.image_path}`}
                 alt={log.notes || "Tree image"}
                 className="w-full h-48 object-cover cursor-pointer"
                 onClick={() =>
                   setPreviewUrl(
-                    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${log.image_path}`
+                    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/tree-media/${log.image_path}`
                   )
                 }
               />
