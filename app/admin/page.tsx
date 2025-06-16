@@ -1,15 +1,48 @@
-// app/admin/page.tsx — Admin panel (fully regenerated)
-"use client";
+'use client'
 
 import { useEffect, useState } from "react";
-import { Toaster, toast } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { Navigation } from "@/components/Navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { downloadCSV } from "@/lib/csv-utils";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_KEY!
-);
+interface DataItem {
+  id: string
+  name: string
+  created_at: string
+}
+
+interface SectionProps {
+  title: string
+  items: DataItem[]
+  type: string
+  input: string
+  setInput: (value: string) => void
+  addItem: (type: string, input: string, callback: () => void) => void
+  removeItem: (type: string, id: string) => void
+}
+
+function exportData(items: DataItem[], type: string, title: string) {
+  if (items.length === 0) {
+    toast.error('ไม่มีข้อมูลให้ส่งออก')
+    return
+  }
+  
+  const filename = `${type}-${new Date().toISOString().split('T')[0]}.csv`
+  downloadCSV(items, filename)
+  toast.success(`ส่งออกข้อมูล ${title} สำเร็จ!`)
+}
+
+function useFilteredItems(items: DataItem[], searchTerm: string) {
+  return items.filter(item => 
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+}
 
 const Section = ({
   title,
@@ -19,47 +52,80 @@ const Section = ({
   setInput,
   addItem,
   removeItem,
-}: any) => {
+}: SectionProps) => {
+  const [searchTerm, setSearchTerm] = useState("")
+  const filteredItems = useFilteredItems(items, searchTerm)
+
   return (
-    <div className="mb-8">
-      <h2 className="text-lg font-bold mb-2">{title}</h2>
-      <div className="flex gap-2 mb-3">
-        <input
-          className="border px-3 py-1 rounded w-full"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-        <button
-          onClick={() => addItem(type, input, () => setInput(""))}
-          className="bg-green-600 text-white px-4 py-1 rounded"
-        >
-          เพิ่ม
-        </button>
-      </div>
-      <ul className="list-disc pl-5 space-y-1">
-        {items.map((item: any) => (
-          <li key={item.id} className="flex justify-between items-center">
-            {item.name}
-            <button
-              onClick={() => removeItem(type, item.id)}
-              className="text-red-500 text-sm"
+    <Card className="mb-6">
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg">{title}</CardTitle>
+          {items.length > 0 && (
+            <Button
+              onClick={() => exportData(items, type, title)}
+              variant="outline"
+              size="sm"
             >
-              ลบ
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+              📁 ส่งออก CSV
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={`เพิ่ม ${title.replace(/^.+ /, '')}`}
+            className="flex-1"
+          />
+          <Button
+            onClick={() => addItem(type, input, () => setInput(""))}
+            disabled={!input.trim()}
+          >
+            เพิ่ม
+          </Button>
+        </div>
+        
+        {items.length > 5 && (
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="ค้นหา..."
+            className="w-full"
+          />
+        )}
+        
+        <div className="space-y-2 max-h-60 overflow-y-auto">
+          {filteredItems.map((item) => (
+            <div key={item.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+              <span>{item.name}</span>
+              <Button
+                onClick={() => removeItem(type, item.id)}
+                variant="destructive"
+                size="sm"
+              >
+                ลบ
+              </Button>
+            </div>
+          ))}
+          {filteredItems.length === 0 && items.length > 0 && (
+            <p className="text-gray-500 text-center py-4">ไม่พบข้อมูลที่ค้นหา</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
 export default function AdminPage() {
-  const [varieties, setVarieties] = useState<any[]>([]);
-  const [fertilizers, setFertilizers] = useState<any[]>([]);
-  const [pesticides, setPesticides] = useState<any[]>([]);
-  const [diseases, setDiseases] = useState<any[]>([]);
-  const [activities, setActivities] = useState<any[]>([]);
-  const [activitiesCost, setActivitiesCost] = useState<any[]>([]);
+  const [varieties, setVarieties] = useState<DataItem[]>([]);
+  const [fertilizers, setFertilizers] = useState<DataItem[]>([]);
+  const [pesticides, setPesticides] = useState<DataItem[]>([]);
+  const [diseases, setDiseases] = useState<DataItem[]>([]);
+  const [activities, setActivities] = useState<DataItem[]>([]);
+  const [activitiesCost, setActivitiesCost] = useState<DataItem[]>([]);
 
   const [newVariety, setNewVariety] = useState("");
   const [newFertilizer, setNewFertilizer] = useState("");
@@ -125,19 +191,54 @@ export default function AdminPage() {
     fetchAll();
   }
 
+  function exportAllData() {
+    const allData = {
+      varieties,
+      fertilizers,
+      pesticides,
+      diseases,
+      activities,
+      activities_cost: activitiesCost
+    }
+    
+    // Export each category as separate CSV files
+    Object.entries(allData).forEach(([key, data]) => {
+      if (data.length > 0) {
+        const filename = `all-${key}-${new Date().toISOString().split('T')[0]}.csv`
+        downloadCSV(data, filename)
+      }
+    })
+    
+    toast.success('ส่งออกข้อมูลทั้งหมดสำเร็จ!')
+  }
+
   return (
-    <>
-      <Toaster position="top-center" />
-      <main className="max-w-2xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">🛠️ หน้าจัดการข้อมูล (Admin)</h1>
-          <a
-            href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 transition-all"
-          >
-            🏠 <span className="hidden sm:inline">กลับหน้าหลัก</span>
-          </a>
-        </div>
+    <ProtectedRoute requiredRole="admin">
+      <Navigation />
+      <main className="max-w-4xl mx-auto p-6">
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-2xl">🛠️ หน้าจัดการข้อมูล (Admin)</CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  onClick={exportAllData}
+                  variant="outline"
+                  size="sm"
+                >
+                  📁 ส่งออกทั้งหมด
+                </Button>
+                <Button asChild>
+                  <Link href="/">
+                    🏠 <span className="hidden sm:inline ml-2">กลับหน้าหลัก</span>
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        <div className="grid gap-6 md:grid-cols-2">
 
         <Section
           addItem={addItem}
@@ -194,7 +295,8 @@ export default function AdminPage() {
           input={newActivityCost}
           setInput={setNewActivityCost}
         />
+        </div>
       </main>
-    </>
+    </ProtectedRoute>
   );
 }

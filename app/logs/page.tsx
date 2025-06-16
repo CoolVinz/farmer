@@ -1,18 +1,14 @@
-// app/logs/page.tsx — Logs List with robust client-side tree lookup
-"use client";
+'use client'
 
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { Navigation } from "@/components/Navigation";
 
 import SingleLogSection, { SingleLog } from "../../components/SingleLogSection";
 import BatchLogSection, { BatchLog } from "../../components/BatchLogSection";
 import CostLogSection, { CostLog } from "../../components/CostLogSection";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_KEY!
-);
 
 const PAGE_SIZE = 5;
 
@@ -181,7 +177,9 @@ export default function LogsPage() {
   const totalCostPages = Math.ceil(costTotal / PAGE_SIZE);
 
   return (
-    <main className="max-w-6xl mx-auto p-6 space-y-12">
+    <ProtectedRoute>
+      <Navigation />
+      <main className="max-w-6xl mx-auto p-6 space-y-12">
       {/* Header */}
       <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
         <h1 className="text-2xl font-bold">📝 รายการบันทึกข้อมูล</h1>
@@ -233,5 +231,6 @@ export default function LogsPage() {
         onPageChange={setCostPage}
       />
     </main>
+    </ProtectedRoute>
   );
 }
