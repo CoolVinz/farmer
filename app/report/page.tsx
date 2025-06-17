@@ -1,128 +1,519 @@
-// app/report/page.tsx — Farm Summary Report Page
-"use client";
+'use client'
 
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_KEY!
-);
+interface TreeStats {
+  total: number
+  alive: number
+  dead: number
+  totalFruits: number
+  fruiting: number
+  avgFruit: string
+  varietyStats: { [key: string]: number }
+  statusPercentages: { alive: number; dead: number }
+}
 
-function CostSummary() {
-  const [costs, setCosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+interface CostStats {
+  totalCost: number
+  costByActivity: { [key: string]: number }
+  recentCosts: any[]
+  avgMonthlyCost: number
+}
 
-  useEffect(() => {
-    fetchCosts();
-  }, []);
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Card key={i} className="animate-pulse">
+            <CardContent className="p-6">
+              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+              <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="text-center text-gray-500">
+        <p>กำลังโหลดข้อมูล...</p>
+        <p className="text-sm">หากติดค้างนานเกินไป ให้ตรวจสอบการเชื่อมต่อฐานข้อมูล</p>
+      </div>
+    </div>
+  )
+}
 
-  async function fetchCosts() {
-    const { data } = await supabase.from("tree_costs").select("*");
-    setCosts(data || []);
-    setLoading(false);
-  }
+function TreeStatsSection({ stats, loading }: { stats: TreeStats; loading: boolean }) {
+  if (loading) return <LoadingSkeleton />
 
-  const totalCost = costs.reduce((sum, c) => sum + (c.amount || 0), 0);
-
-  if (loading)
-    return <p className="text-base">⏳ กำลังโหลดข้อมูลค่าใช้จ่าย...</p>;
+  const healthPercentage = stats.total > 0 ? ((stats.alive / stats.total) * 100).toFixed(1) : '0'
+  const fruitingPercentage = stats.total > 0 ? ((stats.fruiting / stats.total) * 100).toFixed(1) : '0'
 
   return (
-    <div className="border p-4 rounded-xl bg-white">
-      <h3 className="text-base font-semibold">💸 ค่าใช้จ่ายรวม (บาท)</h3>
-      <p className="text-lg font-bold text-amber-600">
-        {totalCost.toLocaleString()}
-      </p>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Total Trees */}
+      <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm">จำนวนต้นทั้งหมด</p>
+              <p className="text-3xl font-bold">{stats.total}</p>
+            </div>
+            <div className="text-4xl opacity-80">🌳</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Alive Trees */}
+      <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-emerald-100 text-sm">ต้นที่มีชีวิต</p>
+              <p className="text-3xl font-bold">{stats.alive}</p>
+              <p className="text-emerald-200 text-xs">{healthPercentage}% ของทั้งหมด</p>
+            </div>
+            <div className="text-4xl opacity-80">🟢</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dead Trees */}
+      <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white border-0">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-red-100 text-sm">ต้นที่ตายแล้ว</p>
+              <p className="text-3xl font-bold">{stats.dead}</p>
+              <p className="text-red-200 text-xs">{(100 - parseFloat(healthPercentage)).toFixed(1)}% ของทั้งหมด</p>
+            </div>
+            <div className="text-4xl opacity-80">💀</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Total Fruits */}
+      <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-orange-100 text-sm">จำนวนผลรวม</p>
+              <p className="text-3xl font-bold">{stats.totalFruits}</p>
+            </div>
+            <div className="text-4xl opacity-80">🍈</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Fruiting Trees */}
+      <Card className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white border-0">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-yellow-100 text-sm">ต้นที่มีผล</p>
+              <p className="text-3xl font-bold">{stats.fruiting}</p>
+              <p className="text-yellow-200 text-xs">{fruitingPercentage}% ของทั้งหมด</p>
+            </div>
+            <div className="text-4xl opacity-80">🌼</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Average Fruit */}
+      <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-sm">ผลเฉลี่ยต่อต้น</p>
+              <p className="text-3xl font-bold">{stats.avgFruit}</p>
+              <p className="text-purple-200 text-xs">ผล/ต้น</p>
+            </div>
+            <div className="text-4xl opacity-80">📦</div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
+}
+
+function CostSummarySection({ stats, loading }: { stats: CostStats; loading: boolean }) {
+  if (loading) {
+    return (
+      <Card className="animate-pulse">
+        <CardContent className="p-6">
+          <div className="h-6 bg-gray-200 rounded mb-4"></div>
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Total Cost */}
+      <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border-0">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-indigo-100 text-sm">ค่าใช้จ่ายรวม</p>
+              <p className="text-3xl font-bold">{stats.totalCost.toLocaleString()}</p>
+              <p className="text-indigo-200 text-xs">บาท</p>
+            </div>
+            <div className="text-4xl opacity-80">💸</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Average Monthly Cost */}
+      <Card className="bg-gradient-to-br from-pink-500 to-pink-600 text-white border-0">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-pink-100 text-sm">ค่าใช้จ่ายเฉลี่ย/เดือน</p>
+              <p className="text-3xl font-bold">{stats.avgMonthlyCost.toLocaleString()}</p>
+              <p className="text-pink-200 text-xs">บาท/เดือน</p>
+            </div>
+            <div className="text-4xl opacity-80">📊</div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
 
 export default function ReportPage() {
-  const [trees, setTrees] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [trees, setTrees] = useState<any[]>([])
+  const [costs, setCosts] = useState<any[]>([])
+  const [varieties, setVarieties] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchTrees();
-  }, []);
+    // Fetch data when component mounts, but only in browser
+    if (typeof window !== 'undefined') {
+      const timeoutId = setTimeout(() => {
+        setLoading(false)
+        setError('การโหลดข้อมูลใช้เวลานานเกินไป อาจเป็นเพราะยังไม่มีข้อมูลในฐานข้อมูล')
+      }, 5000)
 
-  async function fetchTrees() {
-    const { data } = await supabase.from("trees").select("*");
-    setTrees(data || []);
-    setLoading(false);
+      // Safely call fetchAllData
+      try {
+        fetchAllData()
+      } catch (error) {
+        console.error('Error in useEffect:', error)
+        setLoading(false)
+        setError('เกิดข้อผิดพลาดในการเริ่มต้นโหลดข้อมูล')
+      }
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function fetchAllData() {
+    try {
+      // Check if supabase is available
+      if (!supabase) {
+        throw new Error('Supabase client not initialized')
+      }
+
+      const [treesResult, costsResult, varietiesResult] = await Promise.allSettled([
+        supabase.from("trees").select("*"),
+        supabase.from("tree_costs").select("*"),
+        supabase.from("varieties").select("*")
+      ])
+
+      if (treesResult.status === 'fulfilled') {
+        setTrees(treesResult.value.data || [])
+      } else {
+        console.error('Trees fetch failed:', treesResult.reason)
+      }
+      
+      if (costsResult.status === 'fulfilled') {
+        setCosts(costsResult.value.data || [])
+      } else {
+        console.error('Costs fetch failed:', costsResult.reason)
+      }
+      
+      if (varietiesResult.status === 'fulfilled') {
+        setVarieties(varietiesResult.value.data || [])
+      } else {
+        console.error('Varieties fetch failed:', varietiesResult.reason)
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      setError('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + (error as Error).message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const total = trees.length;
-  const alive = trees.filter((t) => t.status === "alive").length;
-  const dead = trees.filter((t) => t.status === "dead").length;
-  const totalFruits = trees.reduce((sum, t) => sum + (t.fruit_count || 0), 0);
-  const fruiting = trees.filter((t) => (t.fruit_count || 0) > 0).length;
-  const avgFruit = total > 0 ? (totalFruits / total).toFixed(2) : "0.00";
+  // Calculate tree statistics safely
+  const treeStats: TreeStats = {
+    total: Array.isArray(trees) ? trees.length : 0,
+    alive: Array.isArray(trees) ? trees.filter((t) => t?.status === "alive").length : 0,
+    dead: Array.isArray(trees) ? trees.filter((t) => t?.status === "dead").length : 0,
+    totalFruits: Array.isArray(trees) ? trees.reduce((sum, t) => sum + (t?.fruit_count || 0), 0) : 0,
+    fruiting: Array.isArray(trees) ? trees.filter((t) => (t?.fruit_count || 0) > 0).length : 0,
+    avgFruit: Array.isArray(trees) && trees.length > 0 ? (trees.reduce((sum, t) => sum + (t?.fruit_count || 0), 0) / trees.length).toFixed(2) : "0.00",
+    varietyStats: Array.isArray(trees) ? trees.reduce((acc, tree) => {
+      if (tree?.variety) {
+        acc[tree.variety] = (acc[tree.variety] || 0) + 1
+      }
+      return acc
+    }, {} as { [key: string]: number }) : {},
+    statusPercentages: {
+      alive: Array.isArray(trees) && trees.length > 0 ? (trees.filter(t => t?.status === "alive").length / trees.length) * 100 : 0,
+      dead: Array.isArray(trees) && trees.length > 0 ? (trees.filter(t => t?.status === "dead").length / trees.length) * 100 : 0
+    }
+  }
+
+  // Calculate cost statistics safely
+  const totalCost = Array.isArray(costs) ? costs.reduce((sum, c) => sum + (c?.cost || 0), 0) : 0
+  const monthsInOperation = 12 // Assuming 1 year of operation, adjust as needed
+  const costStats: CostStats = {
+    totalCost,
+    avgMonthlyCost: monthsInOperation > 0 ? totalCost / monthsInOperation : 0,
+    costByActivity: Array.isArray(costs) ? costs.reduce((acc, cost) => {
+      if (cost?.activity && cost?.cost) {
+        acc[cost.activity] = (acc[cost.activity] || 0) + cost.cost
+      }
+      return acc
+    }, {} as { [key: string]: number }) : {},
+    recentCosts: Array.isArray(costs) ? costs.slice(-5) : [] // Last 5 costs
+  }
+
+  // Top varieties
+  const topVarieties = Object.entries(treeStats.varietyStats)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 3)
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6 text-center">
+            <div className="text-red-600 text-2xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-red-800 mb-2">เกิดข้อผิดพลาด</h2>
+            <p className="text-red-700 mb-6">{error}</p>
+            
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button onClick={() => {
+                setError(null)
+                setLoading(true)
+                fetchAllData()
+              }} className="bg-red-600 hover:bg-red-700">
+                ลองใหม่อีกครั้ง
+              </Button>
+              
+              <Button asChild variant="outline">
+                <Link href="/report-test">
+                  ดูรายงานทดสอบ
+                </Link>
+              </Button>
+              
+              <Button asChild variant="outline">
+                <Link href="/">
+                  กลับหน้าหลัก
+                </Link>
+              </Button>
+            </div>
+            
+            <div className="mt-6 text-sm text-gray-600">
+              <p>💡 <strong>คำแนะนำ:</strong> หากยังไม่มีข้อมูลในระบบ ให้เพิ่มข้อมูลต้นไม้และบันทึกกิจกรรมก่อน</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
-    <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold">📊 รายงานภาพรวมสวนวิสุทธิ์ศิริ</h1>
-        <div className="flex gap-2">
-          <a
-            href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 transition-all"
-          >
-            🏠 <span className="hidden sm:inline">กลับหน้าหลัก</span>
-          </a>
-          <a
-            href="/report/dashboard"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl shadow hover:bg-green-700 transition-all"
-          >
-            📈 ดู Dashboard ต้นทุน
-          </a>
+    <div className="min-h-screen bg-gray-50">
+      
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 py-12">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-4">
+              📊 รายงานภาพรวมสวน
+            </h1>
+            <p className="text-xl text-gray-600 mb-8">สวนวิสุทธิ์ศิริ - ข้อมูลสถิติและการวิเคราะห์</p>
+            
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button asChild className="bg-green-600 hover:bg-green-700">
+                <Link href="/report/dashboard">
+                  📈 แดชบอร์ดแบบละเอียด
+                </Link>
+              </Button>
+              <Button asChild className="bg-purple-600 hover:bg-purple-700">
+                <Link href="/report/cost">
+                  💰 รายงานต้นทุน
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/">
+                  🏠 หน้าหลัก
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {loading ? (
-        <p className="text-base">⏳ กำลังโหลดข้อมูล...</p>
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-6">
-          <div className="border p-6 rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-200">
-            <h2 className="text-base font-semibold">🌳 จำนวนต้นทั้งหมด</h2>
-            <p className="text-lg font-bold">{total}</p>
+      <main className="max-w-7xl mx-auto px-4 py-8 space-y-12">
+        {/* Tree Statistics */}
+        <section>
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">🌳 สถิติต้นไม้</h2>
+            <p className="text-gray-600">ข้อมูลภาพรวมของต้นทุเรียนในสวน</p>
           </div>
-          <div className="border p-4 rounded-xl bg-white">
-            <h2 className="text-base font-semibold">🟢 มีชีวิต</h2>
-            <p className="text-lg font-bold text-green-600">{alive}</p>
-          </div>
-          <div className="border p-4 rounded-xl bg-white">
-            <h2 className="text-base font-semibold">⚰️ ตายแล้ว</h2>
-            <p className="text-lg font-bold text-red-500">{dead}</p>
-          </div>
-          <div className="border p-4 rounded-xl bg-white">
-            <h2 className="text-base font-semibold">🍈 จำนวนผลรวม</h2>
-            <p className="text-lg font-bold">{totalFruits}</p>
-          </div>
-          <div className="border p-4 rounded-xl bg-white">
-            <h2 className="text-base font-semibold">🌼 ต้นที่มีผล</h2>
-            <p className="text-lg font-bold">{fruiting}</p>
-          </div>
-          <div className="border p-4 rounded-xl bg-white">
-            <h2 className="text-base font-semibold">📦 ผลเฉลี่ยต่อต้น</h2>
-            <p className="text-lg font-bold">{avgFruit}</p>
-          </div>
-        </div>
-      )}
+          <TreeStatsSection stats={treeStats} loading={loading} />
+        </section>
 
-      {/* ค่าใช้จ่ายรวม */}
-      <section className="mt-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">💰 สรุปต้นทุนทั้งหมด</h2>
-          <a
-            href="/report/cost"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl shadow hover:bg-purple-700 transition-all"
-          >
-            📋 ดูรายละเอียดต้นทุน
-          </a>
-        </div>
-        <CostSummary />
-      </section>
-    </main>
-  );
+        {/* Variety Breakdown */}
+        <section>
+          <div className="mb-6">
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">🌱 พันธุ์ยอดนิยม</h2>
+            <p className="text-gray-600">พันธุ์ทุเรียนที่มีจำนวนมากที่สุดในสวน</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {topVarieties.map(([variety, count], index) => (
+              <Card key={variety} className={`border-l-4 ${
+                index === 0 ? 'border-l-yellow-500 bg-yellow-50' :
+                index === 1 ? 'border-l-gray-400 bg-gray-50' :
+                'border-l-orange-500 bg-orange-50'
+              }`}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">{variety}</h3>
+                      <p className="text-2xl font-bold text-gray-800">{count} ต้น</p>
+                      <p className="text-sm text-gray-600">
+                        {((count / treeStats.total) * 100).toFixed(1)}% ของทั้งหมด
+                      </p>
+                    </div>
+                    <div className="text-3xl">
+                      {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        {/* Cost Summary */}
+        <section>
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">💰 สรุปค่าใช้จ่าย</h2>
+            <p className="text-gray-600">ข้อมูลการลงทุนและต้นทุนการดำเนินงาน</p>
+          </div>
+          <CostSummarySection stats={costStats} loading={loading} />
+        </section>
+
+        {/* Quick Actions */}
+        <section className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">การดำเนินการด่วน</h2>
+            <p className="text-gray-600">เข้าถึงฟีเจอร์ที่ใช้บ่อยได้อย่างรวดเร็ว</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Button asChild className="h-16 bg-green-600 hover:bg-green-700">
+              <Link href="/logs/add-single" className="flex flex-col">
+                <span className="text-lg mb-1">➕</span>
+                <span className="text-sm">เพิ่มบันทึกต้นไม้</span>
+              </Link>
+            </Button>
+            
+            <Button asChild className="h-16 bg-blue-600 hover:bg-blue-700">
+              <Link href="/logs/add-batch" className="flex flex-col">
+                <span className="text-lg mb-1">📝</span>
+                <span className="text-sm">เพิ่มบันทึกแปลง</span>
+              </Link>
+            </Button>
+            
+            <Button asChild className="h-16 bg-purple-600 hover:bg-purple-700">
+              <Link href="/gallery" className="flex flex-col">
+                <span className="text-lg mb-1">🖼️</span>
+                <span className="text-sm">ดูแกลเลอรี</span>
+              </Link>
+            </Button>
+            
+            <Button asChild className="h-16 bg-orange-600 hover:bg-orange-700">
+              <Link href="/admin" className="flex flex-col">
+                <span className="text-lg mb-1">⚙️</span>
+                <span className="text-sm">จัดการระบบ</span>
+              </Link>
+            </Button>
+          </div>
+        </section>
+
+        {/* Summary Cards */}
+        <section>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Health Summary */}
+            <Card className="border-t-4 border-t-green-500">
+              <CardHeader>
+                <CardTitle className="text-green-700">🌿 สุขภาพสวน</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span>อัตราการรอดตาย</span>
+                    <span className="font-bold text-green-600">
+                      {((treeStats.alive / treeStats.total) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>ต้นที่ให้ผล</span>
+                    <span className="font-bold text-orange-600">
+                      {((treeStats.fruiting / treeStats.total) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>ผลผลิตเฉลี่ย</span>
+                    <span className="font-bold text-purple-600">{treeStats.avgFruit} ผล/ต้น</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Investment Summary */}
+            <Card className="border-t-4 border-t-blue-500">
+              <CardHeader>
+                <CardTitle className="text-blue-700">💼 สรุปการลงทุน</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span>ลงทุนรวม</span>
+                    <span className="font-bold text-blue-600">
+                      {costStats.totalCost.toLocaleString()} บาท
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>ต้นทุนต่อต้น</span>
+                    <span className="font-bold text-purple-600">
+                      {treeStats.total > 0 ? (costStats.totalCost / treeStats.total).toLocaleString() : '0'} บาท/ต้น
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>ค่าใช้จ่ายเฉลี่ย/เดือน</span>
+                    <span className="font-bold text-orange-600">
+                      {costStats.avgMonthlyCost.toLocaleString()} บาท
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      </main>
+    </div>
+  )
 }

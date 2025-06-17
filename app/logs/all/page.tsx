@@ -2,14 +2,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_KEY!
-);
+import { Navigation } from "@/components/Navigation";
 
 const PAGE_SIZE = 10;
 
@@ -48,7 +44,9 @@ export default function LogsListPage() {
   const totalPages = Math.ceil(totalLogs / PAGE_SIZE);
 
   return (
-    <main className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      <main className="max-w-6xl mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">📝 รายการบันทึกข้อมูลต้นไม้</h1>
         <Link
@@ -170,6 +168,7 @@ export default function LogsListPage() {
           <p className="text-gray-500 text-sm">ทั้งหมด {totalLogs} รายการ</p>
         </div>
       )}
-    </main>
+      </main>
+    </div>
   );
 }

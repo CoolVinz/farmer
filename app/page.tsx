@@ -1,9 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { Navigation } from '@/components/Navigation'
-import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,7 +16,7 @@ interface DashboardStats {
 }
 
 export default function HomePage() {
-  const { user, userRole, isHydrated } = useAuth()
+  const isHydrated = true
   const [stats, setStats] = useState<DashboardStats>({
     totalTrees: 0,
     totalLogs: 0,
@@ -108,20 +106,18 @@ export default function HomePage() {
     },
   ]
 
-  // Add admin menu for admin users
-  if (userRole === 'admin') {
-    menuItems.push({
-      href: '/admin',
-      title: 'จัดการระบบ',
-      description: 'เพิ่ม/แก้ไขปุ๋ย ยา ผู้ใช้',
-      icon: '⚙️',
-      bgColor: 'bg-gradient-to-br from-gray-400 to-gray-600',
-      textColor: 'text-white',
-    })
-  }
+  // Add admin menu
+  menuItems.push({
+    href: '/admin',
+    title: 'จัดการระบบ',
+    description: 'เพิ่ม/แก้ไขปุ๋ย ยา ผู้ใช้',
+    icon: '⚙️',
+    bgColor: 'bg-gradient-to-br from-gray-400 to-gray-600',
+    textColor: 'text-white',
+  })
 
   return (
-    <ProtectedRoute>
+    <div>
       <Navigation />
       
       {/* Hero Section */}
@@ -136,7 +132,7 @@ export default function HomePage() {
             </h1>
             <p className="text-xl text-gray-600 mb-2">ระบบจัดการสวนทุเรียนครบวงจร</p>
             <p className="text-lg text-gray-500" suppressHydrationWarning>
-              {greeting}, {user?.email?.split('@')[0]} 👋
+              {greeting} 👋
             </p>
           </div>
         </div>
@@ -255,6 +251,6 @@ export default function HomePage() {
           </p>
         </div>
       </main>
-    </ProtectedRoute>
+    </div>
   )
 }

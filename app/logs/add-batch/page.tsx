@@ -1,131 +1,522 @@
-// app/logs/add-batch/page.tsx — Add Batch Tree Logs with Activity Select
-"use client";
+'use client'
 
-import React, { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-import { Toaster, toast } from "react-hot-toast";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Navigation } from "@/components/Navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/lib/supabase";
+import { toast } from "react-hot-toast";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_KEY!
-);
+interface Activity {
+  id: string;
+  name: string;
+}
 
-type Activity = { id: string; name: string };
+interface Plot {
+  id: string;
+  name: string;
+  tree_count?: number;
+}
 
 export default function AddBatchLogPage() {
-  const [plots] = useState<string[]>(["A", "B", "C"]); // หรือดึงจาก DB ก็ได้
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [fertilizers, setFertilizers] = useState<any[]>([]);
+  const [plots, setPlots] = useState<Plot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Form state
   const [selectedPlot, setSelectedPlot] = useState("");
   const [activityType, setActivityType] = useState("");
   const [logDate, setLogDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [fertilizerType, setFertilizerType] = useState("");
+  const [applicationMethod, setApplicationMethod] = useState("");
+
+  // Custom plot input
+  const [customPlot, setCustomPlot] = useState("");
+  const [useCustomPlot, setUseCustomPlot] = useState(false);
 
   useEffect(() => {
-    fetchActivities();
+    fetchAllData();
+    // Set default date to today
+    setLogDate(new Date().toISOString().split("T")[0]);
   }, []);
 
-  async function fetchActivities() {
-    const { data } = await supabase
-      .from("activities")
-      .select("id, name")
-      .order("name", { ascending: true });
-    if (data) setActivities(data);
+  async function fetchAllData() {
+    try {
+      const [activitiesResult, fertilizersResult, plotsResult] = await Promise.allSettled([
+        supabase.from("activities").select("*").order("name"),
+        supabase.from("fertilizers").select("*").order("name"),
+        // Get unique plot IDs from trees
+        supabase.from("trees").select("location_id").order("location_id")
+      ]);
+
+      if (activitiesResult.status === 'fulfilled' && activitiesResult.value.data) {
+        setActivities(activitiesResult.value.data);
+      }
+      if (fertilizersResult.status === 'fulfilled' && fertilizersResult.value.data) {
+        setFertilizers(fertilizersResult.value.data);
+      }
+      if (plotsResult.status === 'fulfilled' && plotsResult.value.data) {
+        // Extract unique plots and count trees
+        const plotCounts: Record<string, number> = {};
+        plotsResult.value.data.forEach((tree: any) => {
+          const plotId = tree.location_id;
+          plotCounts[plotId] = (plotCounts[plotId] || 0) + 1;
+        });
+
+        const uniquePlots = Object.keys(plotCounts).map(plotId => ({
+          id: plotId,
+          name: `แปลง ${plotId}`,
+          tree_count: plotCounts[plotId]
+        }));
+
+        setPlots(uniquePlots);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleSubmit() {
-    if (!selectedPlot) {
-      toast.error("กรุณาเลือกแปลง");
+    const finalPlot = useCustomPlot ? customPlot.trim() : selectedPlot;
+    
+    if (!finalPlot) {
+      toast.error("กรุณาเลือกแปลงหรือระบุแปลงใหม่");
       return;
     }
-    const date = logDate || new Date().toISOString().split("T")[0];
 
-    // บันทึกแค่หนึ่งแถวใน batch_logs
-    const { error } = await supabase.from("batch_logs").insert({
-      plot_id: selectedPlot,
-      log_date: date,
-      activity_id: activityType || null,
-      notes: notes || null,
-    });
+    if (!logDate) {
+      toast.error("กรุณาเลือกวันที่บันทึก");
+      return;
+    }
 
-    if (!error) {
-      toast.success(`บันทึกทั้งแปลง ${selectedPlot} เรียบร้อย`);
-      setSelectedPlot("");
-      setActivityType("");
-      setLogDate("");
-      setNotes("");
-    } else {
-      toast.error("เกิดข้อผิดพลาดในการบันทึก");
+    setSubmitting(true);
+
+    try {
+      // Insert batch log record
+      const { error } = await supabase.from("batch_logs").insert({
+        plot_id: finalPlot,
+        log_date: logDate,
+        activity_id: activityType || null,
+        notes: notes.trim() || null,
+        fertilizer_name: fertilizerType || null,
+        application_method: applicationMethod || null,
+      });
+
+      if (error) {
+        throw new Error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      }
+
+      toast.success(`บันทึกทั้งแปลง ${finalPlot} สำเร็จ! 🎉`);
+      
+      // Reset form
+      resetForm();
+    } catch (error: any) {
+      toast.error(error.message || "เกิดข้อผิดพลาดในการบันทึก");
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  return (
-    <>
-      <Toaster position="top-center" />
-      <main className="max-w-2xl mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">🌾 บันทึกทั้งแปลง</h1>
-          <Link
-            href="/logs"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl shadow hover:bg-blue-700 transition-all"
-          >
-            🔙 กลับหน้ารายการ Log
-          </Link>
+  function resetForm() {
+    setSelectedPlot("");
+    setCustomPlot("");
+    setUseCustomPlot(false);
+    setActivityType("");
+    setLogDate(new Date().toISOString().split("T")[0]);
+    setNotes("");
+    setFertilizerType("");
+    setApplicationMethod("");
+  }
+
+  const selectedPlotData = plots.find(plot => plot.id === selectedPlot);
+  const finalPlotName = useCustomPlot ? customPlot : selectedPlotData?.name || selectedPlot;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="p-12 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">กำลังโหลดข้อมูล...</p>
+            </CardContent>
+          </Card>
         </div>
+      </div>
+    );
+  }
 
-        <div className="space-y-4">
-          {/* เลือกแปลง */}
-          <select
-            value={selectedPlot}
-            onChange={(e) => setSelectedPlot(e.target.value)}
-            className="border rounded-xl px-4 py-2 w-full shadow"
-          >
-            <option value="">เลือกแปลง</option>
-            {plots.map((p) => (
-              <option key={p} value={p}>{`แปลง ${p}`}</option>
-            ))}
-          </select>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 py-16">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-4">
+              🌾 บันทึกกิจกรรมแปลง
+            </h1>
+            <p className="text-xl text-gray-600 mb-8">บันทึกกิจกรรมการดูแลที่ทำกับทั้งแปลงหรือหลายต้นพร้อมกัน</p>
+            
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl mb-2">🏞️</div>
+                  <div className="text-2xl font-bold text-yellow-600">{plots.length}</div>
+                  <div className="text-sm text-gray-600">แปลงทั้งหมด</div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl mb-2">⚡</div>
+                  <div className="text-2xl font-bold text-orange-600">{activities.length}</div>
+                  <div className="text-sm text-gray-600">ประเภทกิจกรรม</div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl mb-2">💊</div>
+                  <div className="text-2xl font-bold text-amber-600">{fertilizers.length}</div>
+                  <div className="text-sm text-gray-600">สูตรปุ๋ย</div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Quick Actions */}
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button asChild variant="outline" className="bg-white/80 backdrop-blur">
+                <Link href="/logs">
+                  🔙 กลับหน้าบันทึก
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="bg-white/80 backdrop-blur">
+                <Link href="/logs/add-single">
+                  🌳 บันทึกรายต้น
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="bg-white/80 backdrop-blur">
+                <Link href="/logs/cost">
+                  💰 บันทึกค่าใช้จ่าย
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          {/* เลือกกิจกรรม */}
-          <select
-            value={activityType}
-            onChange={(e) => setActivityType(e.target.value)}
-            className="border rounded-xl px-4 py-2 w-full shadow"
-          >
-            <option value="">เลือกประเภทกิจกรรม (optional)</option>
-            {activities.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Form */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Plot Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  🏞️ เลือกแปลง
+                  <Badge variant="outline" className="ml-auto">
+                    {plots.length} แปลง
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-4 mb-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={!useCustomPlot}
+                      onChange={() => setUseCustomPlot(false)}
+                      className="w-4 h-4 text-yellow-600"
+                    />
+                    <span className="text-sm font-medium">เลือกจากแปลงที่มี</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={useCustomPlot}
+                      onChange={() => setUseCustomPlot(true)}
+                      className="w-4 h-4 text-yellow-600"
+                    />
+                    <span className="text-sm font-medium">ระบุแปลงใหม่</span>
+                  </label>
+                </div>
 
-          {/* วันที่ */}
-          <input
-            type="date"
-            value={logDate}
-            onChange={(e) => setLogDate(e.target.value)}
-            className="border rounded-xl px-4 py-2 w-full shadow"
-          />
+                {!useCustomPlot ? (
+                  <div>
+                    <select
+                      value={selectedPlot}
+                      onChange={(e) => setSelectedPlot(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    >
+                      <option value="">เลือกแปลง</option>
+                      {plots.map((plot) => (
+                        <option key={plot.id} value={plot.id}>
+                          {plot.name} ({plot.tree_count} ต้น)
+                        </option>
+                      ))}
+                    </select>
+                    
+                    {selectedPlotData && (
+                      <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <h4 className="font-semibold text-yellow-800 mb-2">แปลงที่เลือก:</h4>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-600">ชื่อแปลง:</span>
+                            <span className="ml-2 font-medium">{selectedPlotData.name}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">จำนวนต้น:</span>
+                            <span className="ml-2 font-medium">{selectedPlotData.tree_count} ต้น</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <Input
+                      type="text"
+                      placeholder="ระบุชื่อแปลงใหม่ (เช่น D, E, เฉพาะพื้นที่)"
+                      value={customPlot}
+                      onChange={(e) => setCustomPlot(e.target.value)}
+                    />
+                    {customPlot && (
+                      <div className="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                        <h4 className="font-semibold text-orange-800 mb-2">แปลงใหม่:</h4>
+                        <p className="text-sm">
+                          <span className="text-gray-600">ชื่อ:</span>
+                          <span className="ml-2 font-medium">แปลง {customPlot}</span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* หมายเหตุ */}
-          <textarea
-            placeholder="หมายเหตุ (optional)"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="border rounded-xl px-4 py-2 w-full shadow"
-            rows={3}
-          />
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>📅 ข้อมูลพื้นฐาน</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    วันที่บันทึก *
+                  </label>
+                  <Input
+                    type="date"
+                    value={logDate}
+                    onChange={(e) => setLogDate(e.target.value)}
+                    required
+                  />
+                </div>
 
-          {/* ปุ่มบันทึก */}
-          <button
-            onClick={handleSubmit}
-            className="bg-yellow-600 text-white px-6 py-2 rounded-xl w-full hover:bg-yellow-700 shadow"
-          >
-            ✅ บันทึกทั้งแปลง
-          </button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    หมายเหตุ
+                  </label>
+                  <textarea
+                    placeholder="บันทึกรายละเอียดกิจกรรมที่ทำ, พื้นที่ที่ดำเนินการ, หรือข้อสังเกต..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Activity Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle>⚡ รายละเอียดกิจกรรม</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ประเภทกิจกรรม
+                  </label>
+                  <select
+                    value={activityType}
+                    onChange={(e) => setActivityType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  >
+                    <option value="">เลือกประเภทกิจกรรม</option>
+                    {activities.map((activity) => (
+                      <option key={activity.id} value={activity.id}>
+                        {activity.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    สูตรปุ๋ย/สารเคมี
+                  </label>
+                  <select
+                    value={fertilizerType}
+                    onChange={(e) => setFertilizerType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  >
+                    <option value="">เลือกสูตรปุ๋ยหรือสารเคมี</option>
+                    {fertilizers.map((fertilizer) => (
+                      <option key={fertilizer.id} value={fertilizer.name}>
+                        {fertilizer.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    วิธีการใช้
+                  </label>
+                  <select
+                    value={applicationMethod}
+                    onChange={(e) => setApplicationMethod(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  >
+                    <option value="">เลือกวิธีการใช้</option>
+                    <option value="ใส่โคนต้น">ใส่โคนต้น</option>
+                    <option value="หว่านทั่วแปลง">หว่านทั่วแปลง</option>
+                    <option value="ฉีดพ่น">ฉีดพ่น</option>
+                    <option value="รดน้ำ">รดน้ำ</option>
+                    <option value="ผสมดิน">ผสมดิน</option>
+                    <option value="อื่นๆ">อื่นๆ</option>
+                  </select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Form Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle>📋 สรุปข้อมูล</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">แปลงที่เลือก:</span>
+                    <span className="font-medium">
+                      {finalPlotName || 'ยังไม่เลือก'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">วันที่:</span>
+                    <span className="font-medium">
+                      {logDate ? new Date(logDate).toLocaleDateString('th-TH') : 'ยังไม่เลือก'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">กิจกรรม:</span>
+                    <span className="font-medium">
+                      {activities.find(a => a.id === activityType)?.name || 'ไม่ระบุ'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">ปุ๋ย/สารเคมี:</span>
+                    <span className="font-medium">{fertilizerType || 'ไม่ระบุ'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">วิธีการ:</span>
+                    <span className="font-medium">{applicationMethod || 'ไม่ระบุ'}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Action Buttons */}
+            <Card>
+              <CardContent className="p-6 space-y-4">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={(!selectedPlot && !customPlot.trim()) || !logDate || submitting}
+                  className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400"
+                  size="lg"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      กำลังบันทึก...
+                    </>
+                  ) : (
+                    '✅ บันทึกทั้งแปลง'
+                  )}
+                </Button>
+                
+                <Button
+                  onClick={resetForm}
+                  variant="outline"
+                  className="w-full"
+                  disabled={submitting}
+                >
+                  🔄 ล้างข้อมูล
+                </Button>
+                
+                <Button asChild variant="ghost" className="w-full">
+                  <Link href="/logs">
+                    🔙 กลับหน้าบันทึก
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Activity List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>⚡ กิจกรรมที่มี</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {activities.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="p-2 bg-gray-50 rounded text-sm cursor-pointer hover:bg-gray-100"
+                      onClick={() => setActivityType(activity.id)}
+                    >
+                      {activity.name}
+                    </div>
+                  ))}
+                  {activities.length === 0 && (
+                    <p className="text-gray-500 text-center py-4 text-sm">ไม่มีกิจกรรม</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Help Card */}
+            <Card className="bg-orange-50 border-orange-200">
+              <CardContent className="p-6">
+                <h4 className="font-semibold text-orange-800 mb-2">💡 คำแนะนำ</h4>
+                <ul className="text-sm text-orange-700 space-y-1">
+                  <li>• เลือกแปลงที่มีหรือสร้างแปลงใหม่</li>
+                  <li>• บันทึกกิจกรรมที่ทำกับหลายต้นพร้อมกัน</li>
+                  <li>• ระบุวิธีการใช้ปุ๋ยหรือสารเคมี</li>
+                  <li>• ข้อมูลจะแสดงในรายงานการดำเนินงาน</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
-    </>
+    </div>
   );
 }

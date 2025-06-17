@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -213,7 +212,7 @@ export default function AdminPage() {
   }
 
   return (
-    <ProtectedRoute requiredRole="admin">
+    <div>
       <Navigation />
       <main className="max-w-4xl mx-auto p-6">
         <Card className="mb-6">
@@ -297,6 +296,6 @@ export default function AdminPage() {
         />
         </div>
       </main>
-    </ProtectedRoute>
+    </div>
   );
 }

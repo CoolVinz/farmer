@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AuthProvider } from '@/contexts/AuthContext'
 import { Toaster } from 'react-hot-toast'
 import { BrowserExtensionHandler } from './BrowserExtensionHandler'
 
@@ -28,10 +27,10 @@ export function HydrationSafeLayout({ children }: HydrationSafeLayoutProps) {
   }
 
   return (
-    <AuthProvider>
+    <>
       <BrowserExtensionHandler />
       {children}
       <Toaster position="top-right" />
-    </AuthProvider>
+    </>
   )
 }
