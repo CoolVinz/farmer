@@ -23,7 +23,7 @@ interface SectionProps {
   input: string
   setInput: (value: string) => void
   addItem: (type: string, input: string, callback: () => void) => void
-  removeItem: (type: string, id: string) => void
+  removeItem: (type: string, id: string, itemName: string) => void
 }
 
 function exportData(items: DataItem[], type: string, title: string) {
@@ -101,7 +101,7 @@ const Section = ({
             <div key={item.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
               <span>{item.name}</span>
               <Button
-                onClick={() => removeItem(type, item.id)}
+                onClick={() => removeItem(type, item.id, item.name)}
                 variant="destructive"
                 size="sm"
               >
@@ -185,9 +185,30 @@ export default function AdminPage() {
     }
   }
 
-  async function removeItem(type: string, id: string) {
-    await supabase.from(type).delete().eq("id", id);
-    fetchAll();
+  async function removeItem(type: string, id: string, itemName: string) {
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `คุณแน่ใจหรือไม่ที่จะลบ "${itemName}"?\n\nการกระทำนี้ไม่สามารถยกเลิกได้`
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from(type).delete().eq("id", id);
+      
+      if (error) {
+        toast.error(`เกิดข้อผิดพลาดในการลบ: ${error.message}`);
+        return;
+      }
+      
+      toast.success(`ลบ "${itemName}" สำเร็จ!`);
+      fetchAll();
+    } catch (error) {
+      toast.error('เกิดข้อผิดพลาดในการลบข้อมูล');
+      console.error('Delete error:', error);
+    }
   }
 
   function exportAllData() {
