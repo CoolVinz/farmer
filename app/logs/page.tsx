@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import { Navigation } from "@/components/Navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { FarmlySidebar } from "@/components/FarmlySidebar";
+import { FarmlyTable, StatusBadge, ActionButton } from "@/components/farmly/FarmlyTable";
+import { FarmlyButton } from "@/components/farmly/FarmlyButton";
+import '../../styles/farmly.css';
 
 import SingleLogSection, { SingleLog } from "../../components/SingleLogSection";
 import BatchLogSection, { BatchLog } from "../../components/BatchLogSection";
@@ -179,164 +178,133 @@ export default function LogsPage() {
   const totalBatchPages = Math.ceil(batchTotal / PAGE_SIZE);
   const totalCostPages = Math.ceil(costTotal / PAGE_SIZE);
 
+  // Format data for Farmly tables
+  const singleLogColumns = [
+    { key: 'tree_id', header: 'รหัสต้น' },
+    { key: 'log_date', header: 'วันที่บันทึก', render: (date: string) => new Date(date).toLocaleDateString('th-TH') },
+    { key: 'activity_type', header: 'กิจกรรม' },
+    { 
+      key: 'health_status', 
+      header: 'สุขภาพ',
+      render: (status: string) => {
+        if (!status) return '–';
+        const variant = status === 'healthy' ? 'healthy' : status === 'sick' ? 'sick' : 'critical';
+        const statusText = status === 'healthy' ? 'แข็งแรง' : status === 'sick' ? 'ป่วย' : 'วิกฤต';
+        return <StatusBadge status={statusText} variant={variant} />;
+      }
+    },
+    { key: 'notes', header: 'หมายเหตุ', render: (notes: string) => notes?.substring(0, 50) + (notes?.length > 50 ? '...' : '') || '–' },
+    { 
+      key: 'actions', 
+      header: 'จัดการ',
+      render: (_: any, row: SingleLog) => (
+        <ActionButton href={`/logs/single/${row.id}`}>
+          ดูรายละเอียด
+        </ActionButton>
+      )
+    }
+  ];
+
+  const batchLogColumns = [
+    { key: 'plot_id', header: 'รหัสแปลง' },
+    { key: 'log_date', header: 'วันที่บันทึก', render: (date: string) => new Date(date).toLocaleDateString('th-TH') },
+    { key: 'activities', header: 'กิจกรรม', render: (activities: any) => activities?.name || '–' },
+    { key: 'notes', header: 'หมายเหตุ', render: (notes: string) => notes?.substring(0, 50) + (notes?.length > 50 ? '...' : '') || '–' },
+    { 
+      key: 'actions', 
+      header: 'จัดการ',
+      render: (_: any, row: BatchLog) => (
+        <ActionButton href={`/logs/batch/${row.id}`}>
+          ดูรายละเอียด
+        </ActionButton>
+      )
+    }
+  ];
+
+  const costLogColumns = [
+    { key: 'cost_date', header: 'วันที่', render: (date: string) => new Date(date).toLocaleDateString('th-TH') },
+    { key: 'activity_type', header: 'ประเภทกิจกรรม' },
+    { key: 'target', header: 'เป้าหมาย' },
+    { key: 'amount', header: 'จำนวนเงิน', render: (amount: number) => `${amount?.toLocaleString()} บาท` },
+    { key: 'notes', header: 'หมายเหตุ', render: (notes: string) => notes?.substring(0, 30) + (notes?.length > 30 ? '...' : '') || '–' },
+    { 
+      key: 'actions', 
+      header: 'จัดการ',
+      render: (_: any, row: CostLog) => (
+        <ActionButton href={`/logs/cost/${row.id}`}>
+          ดูรายละเอียด
+        </ActionButton>
+      )
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-4">
-              📝 บันทึกข้อมูลการดูแลสวน
-            </h1>
-            <p className="text-xl text-gray-600 mb-8">จัดการและติดตามข้อมูลการดูแลต้นทุเรียนอย่างเป็นระบบ</p>
-            
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
-                <CardContent className="p-6 text-center">
-                  <div className="text-3xl mb-2">🌳</div>
-                  <div className="text-2xl font-bold text-emerald-600">{singleTotal}</div>
-                  <div className="text-sm text-gray-600">บันทึกรายต้น</div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
-                <CardContent className="p-6 text-center">
-                  <div className="text-3xl mb-2">🌾</div>
-                  <div className="text-2xl font-bold text-teal-600">{batchTotal}</div>
-                  <div className="text-sm text-gray-600">บันทึกแปลง</div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
-                <CardContent className="p-6 text-center">
-                  <div className="text-3xl mb-2">💰</div>
-                  <div className="text-2xl font-bold text-cyan-600">{costTotal}</div>
-                  <div className="text-sm text-gray-600">บันทึกค่าใช้จ่าย</div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
-                <CardContent className="p-6 text-center">
-                  <div className="text-3xl mb-2">📊</div>
-                  <div className="text-2xl font-bold text-indigo-600">{singleTotal + batchTotal + costTotal}</div>
-                  <div className="text-sm text-gray-600">รวมทั้งหมด</div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Action Buttons */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <Button asChild className="bg-emerald-600 hover:bg-emerald-700 h-16 text-lg">
-                <Link href="/logs/add-single">
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">🌳</div>
-                    <div>บันทึกรายต้น</div>
-                  </div>
-                </Link>
-              </Button>
-              
-              <Button asChild className="bg-teal-600 hover:bg-teal-700 h-16 text-lg">
-                <Link href="/logs/add-batch">
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">🌾</div>
-                    <div>บันทึกแปลง</div>
-                  </div>
-                </Link>
-              </Button>
-              
-              <Button asChild className="bg-cyan-600 hover:bg-cyan-700 h-16 text-lg">
-                <Link href="/logs/cost">
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">💰</div>
-                    <div>บันทึกค่าใช้จ่าย</div>
-                  </div>
-                </Link>
-              </Button>
-              
-              <Button asChild variant="outline" className="bg-white/80 backdrop-blur h-16 text-lg border-2">
-                <Link href="/gallery">
-                  <div className="text-center">
-                    <div className="text-2xl mb-1">🖼️</div>
-                    <div>ดูแกลเลอรี</div>
-                  </div>
-                </Link>
-              </Button>
-            </div>
-            
-            {/* Quick Navigation */}
-            <div className="flex flex-wrap justify-center gap-4">
-              <Button asChild variant="outline" className="bg-white/80 backdrop-blur">
-                <Link href="/">
-                  🏠 หน้าหลัก
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="bg-white/80 backdrop-blur">
-                <Link href="/report">
-                  📊 ดูรายงาน
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="bg-white/80 backdrop-blur">
-                <Link href="/admin">
-                  ⚙️ จัดการข้อมูล
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <main className="max-w-7xl mx-auto px-4 py-8">
-
-        {/* Log Sections */}
-        <div className="space-y-12">
-          <SingleLogSection
-            logs={singleLogs}
-            page={singlePage}
-            totalPages={totalSinglePages}
-            onPageChange={setSinglePage}
-          />
-          <BatchLogSection
-            logs={batchLogs}
-            page={batchPage}
-            totalPages={totalBatchPages}
-            onPageChange={setBatchPage}
-          />
-          <CostLogSection
-            logs={costLogs}
-            page={costPage}
-            totalPages={totalCostPages}
-            onPageChange={setCostPage}
-          />
-        </div>
+    <div className="relative flex size-full min-h-screen flex-col group/design-root overflow-x-hidden">
+      <div className="flex h-full grow">
+        <FarmlySidebar />
         
-        {/* Empty State */}
-        {singleTotal === 0 && batchTotal === 0 && costTotal === 0 && (
-          <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-dashed border-emerald-200">
-            <CardContent className="p-12 text-center">
-              <div className="text-6xl mb-4">🌱</div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">เริ่มต้นบันทึกข้อมูลสวนของคุณ</h3>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                ยังไม่มีข้อมูลในระบบ เริ่มต้นด้วยการเพิ่มข้อมูลต้นไม้หรือบันทึกกิจกรรมการดูแลสวน
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
-                  <Link href="/admin">
-                    ⚙️ ตั้งค่าข้อมูลพื้นฐาน
-                  </Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href="/logs/add-single">
-                    🌳 เพิ่มข้อมูลต้นไม้
-                  </Link>
-                </Button>
+        <main className="ml-72 flex-1 bg-[var(--accent-color)] p-8">
+          <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
+            <h2 className="farmly-page-title">บันทึกการดูแลสวนทุเรียน</h2>
+            <FarmlyButton 
+              variant="primary" 
+              href="/logs/add-single"
+              icon={
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 256 256">
+                  <path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path>
+                </svg>
+              }
+            >
+              เพิ่มบันทึกใหม่
+            </FarmlyButton>
+          </div>
+
+          <section className="mb-10">
+            <h3 className="farmly-section-title">บันทึกการดูแลรายต้น</h3>
+            {singleLogs.length > 0 ? (
+              <FarmlyTable columns={singleLogColumns} data={singleLogs} />
+            ) : (
+              <div className="farmly-card p-8 text-center">
+                <div className="text-4xl mb-4">🌳</div>
+                <p className="text-[var(--text-secondary)]">ยังไม่มีบันทึกการดูแลรายต้น</p>
+                <FarmlyButton href="/logs/add-single" className="mt-4">
+                  เพิ่มบันทึกรายต้น
+                </FarmlyButton>
               </div>
-            </CardContent>
-          </Card>
-        )}
-      </main>
+            )}
+          </section>
+
+          <section className="mb-10">
+            <h3 className="farmly-section-title">บันทึกการดูแลแปลง</h3>
+            {batchLogs.length > 0 ? (
+              <FarmlyTable columns={batchLogColumns} data={batchLogs} />
+            ) : (
+              <div className="farmly-card p-8 text-center">
+                <div className="text-4xl mb-4">🌾</div>
+                <p className="text-[var(--text-secondary)]">ยังไม่มีบันทึกการดูแลแปลง</p>
+                <FarmlyButton href="/logs/add-batch" className="mt-4">
+                  เพิ่มบันทึกแปลง
+                </FarmlyButton>
+              </div>
+            )}
+          </section>
+
+          <section>
+            <h3 className="farmly-section-title">บันทึกค่าใช้จ่าย</h3>
+            {costLogs.length > 0 ? (
+              <FarmlyTable columns={costLogColumns} data={costLogs} />
+            ) : (
+              <div className="farmly-card p-8 text-center">
+                <div className="text-4xl mb-4">💰</div>
+                <p className="text-[var(--text-secondary)]">ยังไม่มีบันทึกค่าใช้จ่าย</p>
+                <FarmlyButton href="/logs/cost" className="mt-4">
+                  เพิ่มบันทึกค่าใช้จ่าย
+                </FarmlyButton>
+              </div>
+            )}
+          </section>
+        </main>
+      </div>
     </div>
   );
 }
