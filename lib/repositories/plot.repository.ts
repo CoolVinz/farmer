@@ -277,6 +277,18 @@ export class PlotRepository {
     })
   }
 
+  // Get tree count for a specific plot
+  async getTreeCountForPlot(plotId: string): Promise<number> {
+    const treeCount = await prisma.tree.count({
+      where: {
+        section: {
+          plotId: plotId
+        }
+      }
+    })
+    return treeCount
+  }
+
   // Private helper methods
   private getVarietyBreakdown(trees: any[]) {
     const varieties: Record<string, number> = {}

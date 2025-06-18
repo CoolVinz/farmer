@@ -50,6 +50,18 @@ export function AgriTrackSidebar() {
           </Link>
           
           <Link 
+            href="/sections" 
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--secondary-color)] transition-colors duration-200"
+          >
+            <div className="icon-secondary" data-icon="TreeStructure" data-size="24px" data-weight="regular">
+              <svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+                <path d="M176,152a8,8,0,0,1-8,8H136v64a8,8,0,0,1-16,0V160H88a8,8,0,0,1,0-16h80A8,8,0,0,1,176,152ZM88,112h80a8,8,0,0,0,0-16H136V32a8,8,0,0,0-16,0V96H88a8,8,0,0,0,0,16Zm112-56H200a8,8,0,0,0,0-16h8a8,8,0,0,0,0-16H200a24,24,0,0,0-24,24V72a8,8,0,0,0,16,0V56h8Zm-8,88a8,8,0,0,0,8-8V112a8,8,0,0,0-16,0v24A8,8,0,0,0,192,144Zm8,16a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V168A8,8,0,0,0,200,160Zm-144,0a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V168A8,8,0,0,0,56,160Zm8-16a8,8,0,0,0,8-8V112a8,8,0,0,0-16,0v24A8,8,0,0,0,64,144ZM56,56H48V48a8,8,0,0,0-16,0v8H24a8,8,0,0,0,0,16h8v8a8,8,0,0,0,16,0V64h8a8,8,0,0,0,0-16Z"></path>
+              </svg>
+            </div>
+            <p className="text-[var(--text-secondary)] text-sm font-medium leading-normal">Sections</p>
+          </Link>
+          
+          <Link 
             href="/report/dashboard" 
             className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
               isActive('/report/dashboard') 

@@ -26,6 +26,12 @@ export function NavigationCard() {
       bgColor: 'bg-green-100 hover:bg-green-200',
     },
     {
+      href: '/sections',
+      title: '🌿 จัดการแปลงย่อย',
+      description: 'จัดการข้อมูลแปลงย่อยและต้นไม้',
+      bgColor: 'bg-emerald-100 hover:bg-emerald-200',
+    },
+    {
       href: '/gallery',
       title: '🖼️ แกลเลอรีรูปภาพ',
       description: 'ดูภาพที่บันทึกไว้',

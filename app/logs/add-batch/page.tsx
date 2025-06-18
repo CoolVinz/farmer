@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
 import { toast } from "react-hot-toast";
+import { plotRepository, sectionRepository } from "@/lib/repositories";
 
 interface Activity {
   id: string;
@@ -17,8 +18,10 @@ interface Activity {
 
 interface Plot {
   id: string;
+  code: string;
   name: string;
-  tree_count?: number;
+  sectionCount?: number;
+  treeCount?: number;
 }
 
 export default function AddBatchLogPage() {
@@ -27,6 +30,7 @@ export default function AddBatchLogPage() {
   const [plots, setPlots] = useState<Plot[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  
 
   // Form state
   const [selectedPlot, setSelectedPlot] = useState("");
@@ -48,11 +52,10 @@ export default function AddBatchLogPage() {
 
   async function fetchAllData() {
     try {
-      const [activitiesResult, fertilizersResult, plotsResult] = await Promise.allSettled([
+      // Fetch activities and fertilizers from Supabase
+      const [activitiesResult, fertilizersResult] = await Promise.allSettled([
         supabase.from("activities").select("*").order("name"),
-        supabase.from("fertilizers").select("*").order("name"),
-        // Get unique plot IDs from trees
-        supabase.from("trees").select("location_id").order("location_id")
+        supabase.from("fertilizers").select("*").order("name")
       ]);
 
       if (activitiesResult.status === 'fulfilled' && activitiesResult.value.data) {
@@ -61,21 +64,36 @@ export default function AddBatchLogPage() {
       if (fertilizersResult.status === 'fulfilled' && fertilizersResult.value.data) {
         setFertilizers(fertilizersResult.value.data);
       }
-      if (plotsResult.status === 'fulfilled' && plotsResult.value.data) {
-        // Extract unique plots and count trees
-        const plotCounts: Record<string, number> = {};
-        plotsResult.value.data.forEach((tree: any) => {
-          const plotId = tree.location_id;
-          plotCounts[plotId] = (plotCounts[plotId] || 0) + 1;
-        });
 
-        const uniquePlots = Object.keys(plotCounts).map(plotId => ({
-          id: plotId,
-          name: `แปลง ${plotId}`,
-          tree_count: plotCounts[plotId]
-        }));
-
-        setPlots(uniquePlots);
+      // Fetch plots with section and tree counts using repository
+      try {
+        const plotsData = await plotRepository.findMany({ includeTreeCount: true });
+        
+        // Get section counts for each plot
+        const plotsWithCounts = await Promise.all(
+          plotsData.map(async (plot) => {
+            const sections = await sectionRepository.findByPlot(plot.id);
+            const treeCount = await plotRepository.getTreeCountForPlot(plot.id);
+            
+            return {
+              id: plot.id,
+              code: plot.code,
+              name: plot.name,
+              sectionCount: sections.length,
+              treeCount: treeCount
+            };
+          })
+        );
+        
+        setPlots(plotsWithCounts);
+      } catch (repoError) {
+        console.warn('Repository not available, using fallback data');
+        // Fallback to demo data if repository fails
+        setPlots([
+          { id: '1', code: 'A', name: 'Garden Plot A', sectionCount: 61, treeCount: 98 },
+          { id: '2', code: 'B', name: 'Garden Plot B', sectionCount: 0, treeCount: 0 },
+          { id: '3', code: 'C', name: 'Garden Plot C', sectionCount: 0, treeCount: 0 }
+        ]);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -139,6 +157,19 @@ export default function AddBatchLogPage() {
 
   const selectedPlotData = plots.find(plot => plot.id === selectedPlot);
   const finalPlotName = useCustomPlot ? customPlot : selectedPlotData?.name || selectedPlot;
+  
+  // Helper function to determine if activity is fertilizer-related
+  const isFertilizerActivity = (activityId: string) => {
+    const activity = activities.find(a => a.id === activityId);
+    if (!activity) return false;
+    
+    const fertilizerKeywords = ['ปุ๋ย', 'fertilizer', 'ใส่ปุ๋ย', 'น้ำยา', 'สารเคมี', 'ใส่ธาตุอาหาร'];
+    return fertilizerKeywords.some(keyword => 
+      activity.name.toLowerCase().includes(keyword.toLowerCase())
+    );
+  };
+  
+  const showFertilizerFields = isFertilizerActivity(activityType);
 
   if (loading) {
     return (
@@ -264,7 +295,7 @@ export default function AddBatchLogPage() {
                       <option value="">เลือกแปลง</option>
                       {plots.map((plot) => (
                         <option key={plot.id} value={plot.id}>
-                          {plot.name} ({plot.tree_count} ต้น)
+                          แปลง {plot.code} ({plot.sectionCount} แปลงย่อย, {plot.treeCount} ต้น)
                         </option>
                       ))}
                     </select>
@@ -352,7 +383,14 @@ export default function AddBatchLogPage() {
                   </label>
                   <select
                     value={activityType}
-                    onChange={(e) => setActivityType(e.target.value)}
+                    onChange={(e) => {
+                      setActivityType(e.target.value);
+                      // Clear fertilizer fields when switching activities
+                      if (!isFertilizerActivity(e.target.value)) {
+                        setFertilizerType("");
+                        setApplicationMethod("");
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   >
                     <option value="">เลือกประเภทกิจกรรม</option>
@@ -364,42 +402,55 @@ export default function AddBatchLogPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    สูตรปุ๋ย/สารเคมี
-                  </label>
-                  <select
-                    value={fertilizerType}
-                    onChange={(e) => setFertilizerType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  >
-                    <option value="">เลือกสูตรปุ๋ยหรือสารเคมี</option>
-                    {fertilizers.map((fertilizer) => (
-                      <option key={fertilizer.id} value={fertilizer.name}>
-                        {fertilizer.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Show fertilizer fields only when activity is fertilizer-related */}
+                {!showFertilizerFields && (
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-600 text-sm text-center">
+                      💡 เลือกกิจกรรมที่เกี่ยวข้องกับปุ๋ยเพื่อดูตัวเลือกเพิ่มเติม
+                    </p>
+                  </div>
+                )}
+                
+                {showFertilizerFields && (
+                  <>
+                    <div className="animate-in slide-in-from-top-2 duration-300">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        สูตรปุ๋ย/สารเคมี *
+                      </label>
+                      <select
+                        value={fertilizerType}
+                        onChange={(e) => setFertilizerType(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      >
+                        <option value="">เลือกสูตรปุ๋ยหรือสารเคมี</option>
+                        {fertilizers.map((fertilizer) => (
+                          <option key={fertilizer.id} value={fertilizer.name}>
+                            {fertilizer.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    วิธีการใช้
-                  </label>
-                  <select
-                    value={applicationMethod}
-                    onChange={(e) => setApplicationMethod(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  >
-                    <option value="">เลือกวิธีการใช้</option>
-                    <option value="ใส่โคนต้น">ใส่โคนต้น</option>
-                    <option value="หว่านทั่วแปลง">หว่านทั่วแปลง</option>
-                    <option value="ฉีดพ่น">ฉีดพ่น</option>
-                    <option value="รดน้ำ">รดน้ำ</option>
-                    <option value="ผสมดิน">ผสมดิน</option>
-                    <option value="อื่นๆ">อื่นๆ</option>
-                  </select>
-                </div>
+                    <div className="animate-in slide-in-from-top-2 duration-300">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        วิธีการใช้ *
+                      </label>
+                      <select
+                        value={applicationMethod}
+                        onChange={(e) => setApplicationMethod(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      >
+                        <option value="">เลือกวิธีการใช้</option>
+                        <option value="ใส่โคนต้น">ใส่โคนต้น</option>
+                        <option value="หว่านทั่วแปลง">หว่านทั่วแปลง</option>
+                        <option value="ฉีดพ่น">ฉีดพ่น</option>
+                        <option value="รดน้ำ">รดน้ำ</option>
+                        <option value="ผสมดิน">ผสมดิน</option>
+                        <option value="อื่นๆ">อื่นๆ</option>
+                      </select>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -431,14 +482,18 @@ export default function AddBatchLogPage() {
                       {activities.find(a => a.id === activityType)?.name || 'ไม่ระบุ'}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">ปุ๋ย/สารเคมี:</span>
-                    <span className="font-medium">{fertilizerType || 'ไม่ระบุ'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">วิธีการ:</span>
-                    <span className="font-medium">{applicationMethod || 'ไม่ระบุ'}</span>
-                  </div>
+                  {showFertilizerFields && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">ปุ๋ย/สารเคมี:</span>
+                        <span className="font-medium">{fertilizerType || 'ไม่ระบุ'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">วิธีการ:</span>
+                        <span className="font-medium">{applicationMethod || 'ไม่ระบุ'}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
