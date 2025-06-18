@@ -137,4 +137,70 @@ export class TreeLogRepository {
       orderBy: { logDate: 'desc' },
     })
   }
+
+  // Get activity distribution for dashboard
+  async getActivityDistribution() {
+    const result = await prisma.treeLog.groupBy({
+      by: ['activityType'],
+      _count: { id: true },
+      where: { 
+        activityType: { not: null }
+      },
+      orderBy: { _count: { id: 'desc' } }
+    })
+    
+    return result.map(item => ({
+      activityType: item.activityType || 'ไม่ระบุ',
+      count: item._count.id,
+    }))
+  }
+
+  // Get monthly log trend (last 6 months)
+  async getMonthlyLogTrend() {
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    sixMonthsAgo.setDate(1)
+    sixMonthsAgo.setHours(0, 0, 0, 0)
+
+    const logs = await prisma.treeLog.findMany({
+      where: {
+        logDate: { gte: sixMonthsAgo }
+      },
+      select: {
+        logDate: true,
+        activityType: true
+      },
+      orderBy: { logDate: 'asc' }
+    })
+
+    // Group by month
+    const monthlyData = new Map<string, number>()
+    logs.forEach(log => {
+      const monthKey = log.logDate.toISOString().substring(0, 7) // YYYY-MM
+      const current = monthlyData.get(monthKey) || 0
+      monthlyData.set(monthKey, current + 1)
+    })
+
+    return Array.from(monthlyData.entries()).map(([month, count]) => ({
+      month,
+      count
+    }))
+  }
+
+  // Get health status distribution
+  async getHealthStatusDistribution() {
+    const result = await prisma.treeLog.groupBy({
+      by: ['healthStatus'],
+      _count: { id: true },
+      where: { 
+        healthStatus: { not: null }
+      },
+      orderBy: { _count: { id: 'desc' } }
+    })
+    
+    return result.map(item => ({
+      healthStatus: item.healthStatus || 'ไม่ระบุ',
+      count: item._count.id,
+    }))
+  }
 }

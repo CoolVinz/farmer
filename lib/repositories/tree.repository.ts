@@ -114,4 +114,71 @@ export class TreeRepository {
       orderBy: { createdAt: 'desc' },
     })
   }
+
+  // Get healthy trees count (trees with recent healthy logs or no logs but alive status)
+  async getHealthyTreesCount() {
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    // Count trees that are either:
+    // 1. Have recent healthy logs, or
+    // 2. Are alive but have no logs (assume healthy)
+    const [treesWithHealthyLogs, treesWithoutLogs] = await Promise.all([
+      prisma.tree.count({
+        where: {
+          status: 'alive',
+          logs: {
+            some: {
+              logDate: { gte: thirtyDaysAgo },
+              healthStatus: 'healthy'
+            }
+          }
+        }
+      }),
+      prisma.tree.count({
+        where: {
+          status: 'alive',
+          logs: { none: {} }
+        }
+      })
+    ])
+
+    return treesWithHealthyLogs + treesWithoutLogs
+  }
+
+  // Get tree variety distribution
+  async getVarietyDistribution() {
+    const result = await prisma.tree.groupBy({
+      by: ['variety'],
+      _count: { id: true },
+      where: { 
+        variety: { not: null },
+        status: 'alive'
+      },
+      orderBy: { _count: { id: 'desc' } }
+    })
+    
+    return result.map(item => ({
+      variety: item.variety || 'ไม่ระบุ',
+      count: item._count.id,
+    }))
+  }
+
+  // Get trees with recent fruit data for yield calculation
+  async getMonthlyYieldData() {
+    const startOfMonth = new Date()
+    startOfMonth.setDate(1)
+    startOfMonth.setHours(0, 0, 0, 0)
+
+    return prisma.tree.findMany({
+      where: {
+        status: 'alive',
+        fruitCount: { gt: 0 }
+      },
+      select: {
+        fruitCount: true,
+        variety: true
+      }
+    })
+  }
 }

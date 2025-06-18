@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Navigation } from '@/components/Navigation'
-import { supabase } from '@/lib/supabase'
+import { TreeRepository } from '@/lib/repositories/tree.repository'
+import { TreeLogRepository } from '@/lib/repositories/tree-log.repository'
+import { TreeCostRepository } from '@/lib/repositories/tree-cost.repository'
 import Link from 'next/link'
 
 interface DashboardStats {
@@ -14,6 +16,9 @@ interface DashboardStats {
   monthlyYield: number
   healthyTrees: number
   monthlyRevenue: number
+  varietyDistribution: { variety: string; count: number }[]
+  activityDistribution: { activityType: string; count: number }[]
+  monthlyTrend: { month: string; amount: number }[]
 }
 
 export default function HomePage() {
@@ -26,7 +31,10 @@ export default function HomePage() {
     recentActivity: '-',
     monthlyYield: 0,
     healthyTrees: 0,
-    monthlyRevenue: 0
+    monthlyRevenue: 0,
+    varietyDistribution: [],
+    activityDistribution: [],
+    monthlyTrend: []
   })
   const [loading, setLoading] = useState(true)
   const [greeting, setGreeting] = useState('สวัสดี')
@@ -50,30 +58,58 @@ export default function HomePage() {
       // Only fetch if hydrated to prevent SSR issues
       if (!isHydrated) return
 
-      // Fetch counts from multiple tables with better error handling
+      // Initialize repositories
+      const treeRepo = new TreeRepository()
+      const treeLogRepo = new TreeLogRepository()
+      const treeCostRepo = new TreeCostRepository()
+
+      // Fetch all data in parallel
       const results = await Promise.allSettled([
-        supabase.from('trees').select('*', { count: 'exact', head: true }),
-        supabase.from('tree_logs').select('*', { count: 'exact', head: true }),
-        supabase.from('tree_costs').select('*', { count: 'exact', head: true }),
-        supabase.from('varieties').select('*', { count: 'exact', head: true }),
-        supabase.from('tree_logs').select('activity_type, created_at').order('created_at', { ascending: false }).limit(1)
+        treeRepo.count(),
+        treeLogRepo.count(),
+        treeCostRepo.count(),
+        treeRepo.getVarietyDistribution(),
+        treeLogRepo.getRecentActivity(1),
+        treeRepo.getHealthyTreesCount(),
+        treeRepo.getMonthlyYieldData(),
+        treeCostRepo.getMonthlyRevenue(),
+        treeLogRepo.getActivityDistribution(),
+        treeCostRepo.getMonthlyTrend()
       ])
 
-      const totalTrees = results[0].status === 'fulfilled' ? (results[0].value.count || 0) : 0
-      const totalLogs = results[1].status === 'fulfilled' ? (results[1].value.count || 0) : 0
-      const totalCosts = results[2].status === 'fulfilled' ? (results[2].value.count || 0) : 0
-      
+      const totalTrees = results[0].status === 'fulfilled' ? results[0].value : 0
+      const totalLogs = results[1].status === 'fulfilled' ? results[1].value : 0
+      const totalCosts = results[2].status === 'fulfilled' ? results[2].value : 0
+      const varietyDistribution = results[3].status === 'fulfilled' ? results[3].value : []
+      const recentActivity = results[4].status === 'fulfilled' && results[4].value.length > 0 
+        ? results[4].value[0].activityType || 'ยังไม่มีกิจกรรม'
+        : 'ยังไม่มีกิจกรรม'
+      const healthyTrees = results[5].status === 'fulfilled' ? results[5].value : 0
+      const yieldData = results[6].status === 'fulfilled' ? results[6].value : []
+      const monthlyRevenue = results[7].status === 'fulfilled' ? Number(results[7].value) : 0
+      const activityDistribution = results[8].status === 'fulfilled' ? results[8].value : []
+      const monthlyTrend = results[9].status === 'fulfilled' ? results[9].value : []
+
+      // Calculate realistic monthly yield based on actual fruit count data
+      const monthlyYield = yieldData.reduce((total, tree) => {
+        const fruitCount = tree.fruitCount || 0
+        // Estimate kg per fruit based on variety (durian average 2-3 kg per fruit)
+        const weightPerFruit = getWeightPerFruit(tree.variety)
+        return total + (fruitCount * weightPerFruit)
+      }, 0)
+
       setStats({
         totalTrees,
         totalLogs,
         totalCosts,
-        totalVarieties: results[3].status === 'fulfilled' ? (results[3].value.count || 0) : 0,
-        recentActivity: results[4].status === 'fulfilled' && results[4].value.data?.[0]?.activity_type 
-          ? results[4].value.data[0].activity_type 
-          : 'ยังไม่มีกิจกรรม',
-        monthlyYield: Math.round((totalTrees * 1.2) + (totalLogs * 0.5)), // Mock calculation
-        healthyTrees: Math.round(totalTrees * 0.95), // 95% healthy
-        monthlyRevenue: Math.round((totalTrees * 250) + (totalLogs * 50)) // Mock revenue calculation
+        totalVarieties: varietyDistribution.length,
+        recentActivity,
+        monthlyYield: Math.round(monthlyYield),
+        healthyTrees,
+        monthlyRevenue,
+        varietyDistribution,
+        activityDistribution,
+        monthlyTrend
       })
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
@@ -86,11 +122,26 @@ export default function HomePage() {
         recentActivity: 'ไม่สามารถโหลดข้อมูลได้',
         monthlyYield: 0,
         healthyTrees: 0,
-        monthlyRevenue: 0
+        monthlyRevenue: 0,
+        varietyDistribution: [],
+        activityDistribution: [],
+        monthlyTrend: []
       })
     } finally {
       setLoading(false)
     }
+  }
+
+  // Helper function to estimate weight per fruit based on variety
+  function getWeightPerFruit(variety: string | null): number {
+    const varietyWeights: Record<string, number> = {
+      'หมอนทอง': 2.5,
+      'ชะนี': 3.0,
+      'กันยาว': 2.8,
+      'กระดุม': 1.5,
+      'ไผ่ทอง': 2.2
+    }
+    return varietyWeights[variety || ''] || 2.5 // Default 2.5 kg per fruit
   }
 
   const formatNumber = (num: number) => {
@@ -210,12 +261,28 @@ export default function HomePage() {
                 </span>
               </div>
               <div className="grid min-h-[200px] grid-flow-col gap-4 grid-rows-[1fr_auto] items-end justify-items-center px-3 pt-4">
-                <div className="rounded-t-md bg-[#a3cca3] w-full transition-all duration-500 ease-out" style={{height: '70%'}}></div>
-                <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">หมอนทอง</p>
-                <div className="rounded-t-md bg-[#a3cca3] w-full transition-all duration-500 ease-out" style={{height: '40%'}}></div>
-                <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">ชะนี</p>
-                <div className="rounded-t-md bg-[#a3cca3] w-full transition-all duration-500 ease-out" style={{height: '55%'}}></div>
-                <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">กันยาว</p>
+                {stats.varietyDistribution.slice(0, 3).map((variety, index) => {
+                  const maxCount = Math.max(...stats.varietyDistribution.map(v => v.count))
+                  const height = maxCount > 0 ? (variety.count / maxCount) * 80 + 20 : 20
+                  return (
+                    <React.Fragment key={variety.variety}>
+                      <div 
+                        className="rounded-t-md bg-[#a3cca3] w-full transition-all duration-500 ease-out" 
+                        style={{height: `${height}%`}}
+                        title={`${variety.variety}: ${variety.count} ต้น`}
+                      ></div>
+                      <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">
+                        {variety.variety}
+                      </p>
+                    </React.Fragment>
+                  )
+                })}
+                {stats.varietyDistribution.length === 0 && (
+                  <>
+                    <div className="rounded-t-md bg-[#e0e0e0] w-full transition-all duration-500 ease-out" style={{height: '20%'}}></div>
+                    <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">ไม่มีข้อมูล</p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -235,12 +302,28 @@ export default function HomePage() {
                 </span>
               </div>
               <div className="grid min-h-[200px] grid-flow-col gap-4 grid-rows-[1fr_auto] items-end justify-items-center px-3 pt-4">
-                <div className="rounded-t-md bg-[#a3cca3] w-full transition-all duration-500 ease-out" style={{height: '80%'}}></div>
-                <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">บันทึกรายต้น</p>
-                <div className="rounded-t-md bg-[#a3cca3] w-full transition-all duration-500 ease-out" style={{height: '95%'}}></div>
-                <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">บันทึกแปลง</p>
-                <div className="rounded-t-md bg-[#a3cca3] w-full transition-all duration-500 ease-out" style={{height: '60%'}}></div>
-                <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">ค่าใช้จ่าย</p>
+                {stats.activityDistribution.slice(0, 3).map((activity, index) => {
+                  const maxCount = Math.max(...stats.activityDistribution.map(a => a.count))
+                  const height = maxCount > 0 ? (activity.count / maxCount) * 80 + 20 : 20
+                  return (
+                    <React.Fragment key={activity.activityType}>
+                      <div 
+                        className="rounded-t-md bg-[#a3cca3] w-full transition-all duration-500 ease-out" 
+                        style={{height: `${height}%`}}
+                        title={`${activity.activityType}: ${activity.count} ครั้ง`}
+                      ></div>
+                      <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">
+                        {activity.activityType.length > 8 ? activity.activityType.substring(0, 8) + '...' : activity.activityType}
+                      </p>
+                    </React.Fragment>
+                  )
+                })}
+                {stats.activityDistribution.length === 0 && (
+                  <>
+                    <div className="rounded-t-md bg-[#e0e0e0] w-full transition-all duration-500 ease-out" style={{height: '20%'}}></div>
+                    <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">ไม่มีข้อมูล</p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -271,12 +354,24 @@ export default function HomePage() {
                   </defs>
                 </svg>
                 <div className="flex justify-around">
-                  <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">ม.ค.</p>
-                  <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">ก.พ.</p>
-                  <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">มี.ค.</p>
-                  <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">เม.ย.</p>
-                  <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">พ.ค.</p>
-                  <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">มิ.ย.</p>
+                  {stats.monthlyTrend.slice(-6).map((trend, index) => {
+                    const monthName = new Date(trend.month + '-01').toLocaleDateString('th-TH', { month: 'short' })
+                    return (
+                      <p key={trend.month} className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">
+                        {monthName}
+                      </p>
+                    )
+                  })}
+                  {stats.monthlyTrend.length === 0 && (
+                    <>
+                      <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">ม.ค.</p>
+                      <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">ก.พ.</p>
+                      <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">มี.ค.</p>
+                      <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">เม.ย.</p>
+                      <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">พ.ค.</p>
+                      <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">มิ.ย.</p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
