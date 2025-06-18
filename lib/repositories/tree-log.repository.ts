@@ -14,9 +14,7 @@ export class TreeLogRepository {
       take: options?.take,
       where: options?.treeId ? { treeId: options.treeId } : undefined,
       include: {
-        tree: options?.includeTree ? {
-          include: { variety_ref: true }
-        } : false,
+        tree: options?.includeTree || false,
       },
       orderBy: { logDate: 'desc' },
     })
@@ -27,7 +25,7 @@ export class TreeLogRepository {
     return prisma.treeLog.findUnique({
       where: { id },
       include: {
-        tree: { include: { variety_ref: true } },
+        tree: true,
       },
     })
   }
@@ -41,7 +39,7 @@ export class TreeLogRepository {
       skip: options?.skip,
       take: options?.take,
       include: {
-        tree: { include: { variety_ref: true } },
+        tree: true,
       },
       orderBy: { logDate: 'desc' },
     })
@@ -57,7 +55,7 @@ export class TreeLogRepository {
     return prisma.treeLog.create({
       data: logData,
       include: {
-        tree: { include: { variety_ref: true } },
+        tree: true,
       },
     })
   }
@@ -73,7 +71,7 @@ export class TreeLogRepository {
       where: { id },
       data: updateData,
       include: {
-        tree: { include: { variety_ref: true } },
+        tree: true,
       },
     })
   }
@@ -113,7 +111,7 @@ export class TreeLogRepository {
         },
       },
       include: {
-        tree: { include: { variety_ref: true } },
+        tree: true,
       },
       orderBy: { logDate: 'desc' },
     })
@@ -128,14 +126,13 @@ export class TreeLogRepository {
           { activityType: { contains: query, mode: 'insensitive' } },
           { tree: { 
             OR: [
-              { treeNumber: { contains: query, mode: 'insensitive' } },
               { locationId: { contains: query, mode: 'insensitive' } },
             ]
           }},
         ],
       },
       include: {
-        tree: { include: { variety_ref: true } },
+        tree: true,
       },
       orderBy: { logDate: 'desc' },
     })

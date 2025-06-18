@@ -8,7 +8,6 @@ export class TreeRepository {
     take?: number
     include?: {
       logs?: boolean
-      variety_ref?: boolean
     }
   }) {
     return prisma.tree.findMany({
@@ -16,7 +15,6 @@ export class TreeRepository {
       take: options?.take,
       include: {
         logs: options?.include?.logs || false,
-        variety_ref: options?.include?.variety_ref || false,
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -28,7 +26,6 @@ export class TreeRepository {
       where: { id },
       include: {
         logs: includeLogs,
-        variety_ref: true,
       },
     })
   }
@@ -37,7 +34,6 @@ export class TreeRepository {
   async findByLocation(locationId: string) {
     return prisma.tree.findMany({
       where: { locationId },
-      include: { variety_ref: true },
       orderBy: { treeNumber: 'asc' },
     })
   }
@@ -45,27 +41,31 @@ export class TreeRepository {
   // Create new tree
   async create(data: CreateTreeInput) {
     const treeData = {
-      ...data,
-      datePlanted: new Date(data.datePlanted),
+      locationId: data.locationId,
+      variety: data.variety,
+      status: data.status,
+      treeNumber: parseInt(data.treeNumber, 10),
+      plantedDate: data.datePlanted ? new Date(data.datePlanted) : undefined,
     }
     
     return prisma.tree.create({
       data: treeData,
-      include: { variety_ref: true },
     })
   }
 
   // Update tree
   async update(id: string, data: UpdateTreeInput) {
-    const updateData = {
-      ...data,
-      ...(data.datePlanted && { datePlanted: new Date(data.datePlanted) }),
-    }
+    const updateData: any = {}
+    
+    if (data.locationId) updateData.locationId = data.locationId
+    if (data.variety) updateData.variety = data.variety
+    if (data.status) updateData.status = data.status
+    if (data.treeNumber) updateData.treeNumber = parseInt(data.treeNumber, 10)
+    if (data.datePlanted) updateData.plantedDate = new Date(data.datePlanted)
 
     return prisma.tree.update({
       where: { id },
       data: updateData,
-      include: { variety_ref: true },
     })
   }
 
@@ -96,15 +96,21 @@ export class TreeRepository {
 
   // Search trees
   async search(query: string) {
+    const numericQuery = parseInt(query, 10)
+    const searchConditions: any[] = [
+      { locationId: { contains: query, mode: 'insensitive' } },
+      { variety: { contains: query, mode: 'insensitive' } },
+    ]
+    
+    // Add numeric search for tree number if query is a valid number
+    if (!isNaN(numericQuery)) {
+      searchConditions.push({ treeNumber: { equals: numericQuery } })
+    }
+    
     return prisma.tree.findMany({
       where: {
-        OR: [
-          { treeNumber: { contains: query, mode: 'insensitive' } },
-          { locationId: { contains: query, mode: 'insensitive' } },
-          { variety: { contains: query, mode: 'insensitive' } },
-        ],
+        OR: searchConditions,
       },
-      include: { variety_ref: true },
       orderBy: { createdAt: 'desc' },
     })
   }
