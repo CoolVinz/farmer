@@ -126,13 +126,20 @@ export class TreeLogRepository {
           { activityType: { contains: query, mode: 'insensitive' } },
           { tree: { 
             OR: [
-              { locationId: { contains: query, mode: 'insensitive' } },
+              { treeCode: { contains: query, mode: 'insensitive' } },
+              { variety: { contains: query, mode: 'insensitive' } },
+              { plot: { code: { contains: query, mode: 'insensitive' } } },
+              { plot: { name: { contains: query, mode: 'insensitive' } } },
             ]
           }},
         ],
       },
       include: {
-        tree: true,
+        tree: {
+          include: {
+            plot: true
+          }
+        },
       },
       orderBy: { logDate: 'desc' },
     })

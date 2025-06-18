@@ -2,14 +2,24 @@ import { z } from 'zod'
 
 // Tree validations
 export const createTreeSchema = z.object({
-  treeNumber: z.string().min(1, 'Tree number is required'),
-  locationId: z.string().min(1, 'Location ID is required'),
+  plotId: z.string().uuid('Invalid plot ID'),
   variety: z.string().min(1, 'Variety is required'),
-  datePlanted: z.string().or(z.date()),
+  datePlanted: z.string().or(z.date()).optional(),
   status: z.string().optional().default('alive'),
 })
 
-export const updateTreeSchema = createTreeSchema.partial()
+export const updateTreeSchema = createTreeSchema.omit({ plotId: true }).partial()
+
+// Plot validations
+export const createPlotSchema = z.object({
+  code: z.string().length(1, 'Plot code must be a single character (A, B, C)').regex(/^[A-C]$/i, 'Plot code must be A, B, or C'),
+  name: z.string().min(1, 'Plot name is required'),
+  area: z.number().positive('Area must be positive').optional(),
+  soilType: z.string().optional(),
+  description: z.string().optional(),
+})
+
+export const updatePlotSchema = createPlotSchema.omit({ code: true }).partial()
 
 // Tree Log validations
 export const createTreeLogSchema = z.object({
@@ -58,6 +68,8 @@ export const updateReferenceDataSchema = createReferenceDataSchema.partial()
 // Export types
 export type CreateTreeInput = z.infer<typeof createTreeSchema>
 export type UpdateTreeInput = z.infer<typeof updateTreeSchema>
+export type CreatePlotInput = z.infer<typeof createPlotSchema>
+export type UpdatePlotInput = z.infer<typeof updatePlotSchema>
 export type CreateTreeLogInput = z.infer<typeof createTreeLogSchema>
 export type UpdateTreeLogInput = z.infer<typeof updateTreeLogSchema>
 export type CreateBatchLogInput = z.infer<typeof createBatchLogSchema>

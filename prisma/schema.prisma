@@ -9,21 +9,41 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model Plot {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String     @unique // "A", "B", "C"
+  name        String     // "Garden Plot A", etc.
+  area        Decimal?   @db.Decimal // plot area in rai/acres
+  soilType    String?    @map("soil_type")
+  description String?
+  createdAt   DateTime?  @default(now()) @map("created_at") @db.Timestamp(6)
+  trees       Tree[]
+  batchLogs   BatchLog[]
+
+  @@map("plots")
+}
+
 model Tree {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  locationId    String    @map("location_id")
+  plotId        String    @map("plot_id") @db.Uuid
+  treeNumber    Int       @map("tree_number") // 1, 2, 3... within the plot
+  treeCode      String    @unique @map("tree_code") // Computed: "A1", "B3", etc.
   variety       String?
   plantedDate   DateTime? @map("planted_date") @db.Date
   status        String?   @default("alive")
   createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
-  treeNumber    Int?      @default(1) @map("tree_number")
   treeHeight    Decimal?  @map("tree_height") @db.Decimal
   trunkDiameter Decimal?  @map("trunk_diameter") @db.Decimal
   flowerDate    DateTime? @map("flower_date") @db.Date
   fruitCount    Int?      @default(0) @map("fruit_count")
   deathDate     DateTime? @map("death_date") @db.Date
+  
+  // Relationships
+  plot          Plot      @relation(fields: [plotId], references: [id], onDelete: Cascade)
   logs          TreeLog[]
 
+  // Constraints
+  @@unique([plotId, treeNumber]) // Ensure unique tree numbers per plot
   @@map("trees")
 }
 
@@ -48,11 +68,14 @@ model TreeLog {
 
 model BatchLog {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  plotId     String    @map("plot_id")
+  plotId     String    @map("plot_id") @db.Uuid
   logDate    DateTime  @map("log_date") @db.Date
   activityId String?   @map("activity_id") @db.Uuid
   notes      String?
   createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  // Relationships
+  plot       Plot      @relation(fields: [plotId], references: [id], onDelete: Cascade)
   activities Activity? @relation(fields: [activityId], references: [id], onUpdate: NoAction)
 
   @@map("batch_logs")

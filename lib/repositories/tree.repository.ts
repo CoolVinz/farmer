@@ -6,50 +6,114 @@ export class TreeRepository {
   async findMany(options?: {
     skip?: number
     take?: number
+    plotId?: string
     include?: {
       logs?: boolean
+      plot?: boolean
     }
   }) {
     return prisma.tree.findMany({
       skip: options?.skip,
       take: options?.take,
+      where: options?.plotId ? { plotId: options.plotId } : undefined,
       include: {
         logs: options?.include?.logs || false,
+        plot: options?.include?.plot || false,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { treeNumber: 'asc' },
     })
   }
 
   // Get tree by ID
-  async findById(id: string, includeLogs = false) {
+  async findById(id: string, options?: {
+    includeLogs?: boolean
+    includePlot?: boolean
+  }) {
     return prisma.tree.findUnique({
       where: { id },
       include: {
-        logs: includeLogs,
+        logs: options?.includeLogs || false,
+        plot: options?.includePlot || false,
       },
     })
   }
 
-  // Get trees by location
-  async findByLocation(locationId: string) {
+  // Get tree by tree code (A1, B3, etc.)
+  async findByTreeCode(treeCode: string) {
+    return prisma.tree.findUnique({
+      where: { treeCode: treeCode.toUpperCase() },
+      include: {
+        plot: true,
+        logs: {
+          orderBy: { logDate: 'desc' },
+          take: 5 // Get recent logs
+        }
+      },
+    })
+  }
+
+  // Get trees by plot
+  async findByPlot(plotId: string) {
     return prisma.tree.findMany({
-      where: { locationId },
+      where: { plotId },
+      include: {
+        plot: true,
+      },
+      orderBy: { treeNumber: 'asc' },
+    })
+  }
+
+  // Get trees by plot code (A, B, C)
+  async findByPlotCode(plotCode: string) {
+    return prisma.tree.findMany({
+      where: { 
+        plot: { 
+          code: plotCode.toUpperCase() 
+        } 
+      },
+      include: {
+        plot: true,
+      },
       orderBy: { treeNumber: 'asc' },
     })
   }
 
   // Create new tree
-  async create(data: CreateTreeInput) {
+  async create(data: CreateTreeInput & { plotId: string }) {
+    // Get the plot to generate tree code
+    const plot = await prisma.plot.findUnique({
+      where: { id: data.plotId },
+      select: { code: true }
+    })
+
+    if (!plot) {
+      throw new Error('Plot not found')
+    }
+
+    // Get next tree number for this plot
+    const lastTree = await prisma.tree.findFirst({
+      where: { plotId: data.plotId },
+      orderBy: { treeNumber: 'desc' },
+      select: { treeNumber: true }
+    })
+
+    const treeNumber = (lastTree?.treeNumber || 0) + 1
+    const treeCode = `${plot.code}${treeNumber}`
+
     const treeData = {
-      locationId: data.locationId,
+      plotId: data.plotId,
+      treeNumber,
+      treeCode,
       variety: data.variety,
-      status: data.status,
-      treeNumber: parseInt(data.treeNumber, 10),
+      status: data.status || 'alive',
       plantedDate: data.datePlanted ? new Date(data.datePlanted) : undefined,
     }
     
     return prisma.tree.create({
       data: treeData,
+      include: {
+        plot: true
+      }
     })
   }
 
@@ -57,15 +121,16 @@ export class TreeRepository {
   async update(id: string, data: UpdateTreeInput) {
     const updateData: any = {}
     
-    if (data.locationId) updateData.locationId = data.locationId
     if (data.variety) updateData.variety = data.variety
     if (data.status) updateData.status = data.status
-    if (data.treeNumber) updateData.treeNumber = parseInt(data.treeNumber, 10)
     if (data.datePlanted) updateData.plantedDate = new Date(data.datePlanted)
 
     return prisma.tree.update({
       where: { id },
       data: updateData,
+      include: {
+        plot: true
+      }
     })
   }
 
@@ -81,25 +146,41 @@ export class TreeRepository {
     return prisma.tree.count()
   }
 
-  // Get unique locations
-  async getUniqueLocations() {
+  // Get plot summaries
+  async getPlotSummaries() {
     const result = await prisma.tree.groupBy({
-      by: ['locationId'],
+      by: ['plotId'],
       _count: { id: true },
     })
     
-    return result.map(item => ({
-      locationId: item.locationId,
-      treeCount: item._count.id,
-    }))
+    // Get plot details
+    const plotSummaries = await Promise.all(
+      result.map(async (item) => {
+        const plot = await prisma.plot.findUnique({
+          where: { id: item.plotId },
+          select: { code: true, name: true }
+        })
+        
+        return {
+          plotId: item.plotId,
+          plotCode: plot?.code || 'Unknown',
+          plotName: plot?.name || 'Unknown Plot',
+          treeCount: item._count.id,
+        }
+      })
+    )
+    
+    return plotSummaries.sort((a, b) => a.plotCode.localeCompare(b.plotCode))
   }
 
   // Search trees
   async search(query: string) {
     const numericQuery = parseInt(query, 10)
     const searchConditions: any[] = [
-      { locationId: { contains: query, mode: 'insensitive' } },
+      { treeCode: { contains: query, mode: 'insensitive' } },
       { variety: { contains: query, mode: 'insensitive' } },
+      { plot: { code: { contains: query, mode: 'insensitive' } } },
+      { plot: { name: { contains: query, mode: 'insensitive' } } },
     ]
     
     // Add numeric search for tree number if query is a valid number
@@ -111,7 +192,10 @@ export class TreeRepository {
       where: {
         OR: searchConditions,
       },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        plot: true,
+      },
+      orderBy: { treeCode: 'asc' },
     })
   }
 
