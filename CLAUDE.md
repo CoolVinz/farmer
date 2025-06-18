@@ -8,16 +8,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` - Build production version
 - `npm run start` - Start production server
 - `npm run lint` - Run Next.js linting
+- `npm run prisma:generate` - Generate Prisma client
+- `npm run prisma:studio` - Open Prisma Studio database browser
 
 ## Architecture Overview
 
 This is a Next.js 15 application for managing tree/farm data called "สวนวิสุทธิ์ศิริ" (Visutthisiri Garden). The app uses:
 
 - **Database**: Supabase (PostgreSQL) for data storage
-- **UI**: Tailwind CSS for styling
+- **ORM**: Prisma with type-safe repository pattern
+- **UI**: Tailwind CSS for styling with shadcn/ui components
 - **Charts**: Chart.js with react-chartjs-2 for data visualization
 - **State**: React hooks for client-side state management
 - **Notifications**: react-hot-toast for user feedback
+- **Validation**: Zod schemas for data validation
 
 ### Key Database Tables
 
@@ -106,3 +110,35 @@ The application manages several types of data:
 - Individual CSV export per section
 - Bulk export all data functionality
 - Improved data type safety
+
+## Prisma ORM Implementation (December 2024)
+
+**Modern Database Layer:**
+- Complete Prisma ORM setup with PostgreSQL
+- Auto-generated TypeScript types for all database models
+- Repository pattern for consistent data access
+- Zod validation schemas for data integrity
+- Type-safe CRUD operations across the application
+
+**Key Features:**
+- `/admin-prisma` - Modern admin interface using Prisma repositories
+- Type-safe database operations with IntelliSense support
+- Centralized validation and error handling
+- Migration management for schema changes
+- Performance optimized queries with Prisma
+
+**Database Models:**
+- `Tree` - Individual tree records with full type safety
+- `TreeLog` - Activity logs with proper relationships
+- `BatchLog` - Plot-level operations
+- `TreeCost` - Cost tracking with validation
+- Reference data models (`Variety`, `Fertilizer`, etc.) with CRUD operations
+
+**Developer Benefits:**
+- Adding new data types is now streamlined with auto-generated types
+- Consistent API patterns across all database operations
+- Built-in validation prevents data integrity issues
+- IntelliSense support for all database operations
+- Easy migration management for schema changes
+
+**Setup:** See `docs/DATABASE-SETUP-INSTRUCTIONS.md` for complete setup instructions.
