@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Tree {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  locationId    String    @map("location_id")
+  variety       String?
+  plantedDate   DateTime? @map("planted_date") @db.Date
+  status        String?   @default("alive")
+  createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  treeNumber    Int?      @default(1) @map("tree_number")
+  treeHeight    Decimal?  @map("tree_height") @db.Decimal
+  trunkDiameter Decimal?  @map("trunk_diameter") @db.Decimal
+  flowerDate    DateTime? @map("flower_date") @db.Date
+  fruitCount    Int?      @default(0) @map("fruit_count")
+  deathDate     DateTime? @map("death_date") @db.Date
+  logs          TreeLog[]
+
+  @@map("trees")
+}
+
+model TreeLog {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  treeId         String?   @map("tree_id") @db.Uuid
+  logDate        DateTime  @map("log_date") @db.Date
+  notes          String?
+  fertilizer     String?
+  pesticide      String?
+  createdBy      String?   @map("created_by")
+  imagePath      String?   @map("image_path")
+  createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  activityType   String?   @map("activity_type")
+  healthStatus   String?   @map("health_status")
+  fertilizerType String?   @map("fertilizer_type")
+  batchId        String?   @map("batch_id") @db.Uuid
+  tree           Tree?     @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("tree_logs")
+}
+
+model BatchLog {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  plotId     String    @map("plot_id")
+  logDate    DateTime  @map("log_date") @db.Date
+  activityId String?   @map("activity_id") @db.Uuid
+  notes      String?
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  activities Activity? @relation(fields: [activityId], references: [id], onUpdate: NoAction)
+
+  @@map("batch_logs")
+}
+
+model TreeCost {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  costDate     DateTime @map("cost_date") @db.Date
+  activityType String   @map("activity_type")
+  target       String
+  amount       Decimal  @db.Decimal
+  notes        String?
+
+  @@map("tree_costs")
+}
+
+model Variety {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @unique
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("varieties")
+}
+
+model Fertilizer {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @unique
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("fertilizers")
+}
+
+model Pesticide {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @unique
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("pesticides")
+}
+
+model PlantDisease {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @unique
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("plant_diseases")
+}
+
+model Activity {
+  id         String     @id(map: "activities_cost_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String     @unique(map: "activities_cost_name_key")
+  batch_logs BatchLog[]
+
+  @@map("activities")
+}
+
+model ActivityCost {
+  id   String @id(map: "activities_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String @unique(map: "activities_name_key")
+
+  @@map("activities_cost")
+}
+
+model users {
+  id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String @unique
+}
