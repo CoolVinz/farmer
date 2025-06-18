@@ -10,40 +10,55 @@ datasource db {
 }
 
 model Plot {
-  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code        String     @unique // "A", "B", "C"
-  name        String     // "Garden Plot A", etc.
-  area        Decimal?   @db.Decimal // plot area in rai/acres
-  soilType    String?    @map("soil_type")
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String    @unique @db.VarChar(10)
+  name        String    @db.VarChar(255)
+  area        Decimal?  @db.Decimal
+  soilType    String?   @map("soil_type") @db.VarChar(255)
   description String?
-  createdAt   DateTime?  @default(now()) @map("created_at") @db.Timestamp(6)
-  trees       Tree[]
-  batchLogs   BatchLog[]
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  sections    Section[]
 
   @@map("plots")
 }
 
-model Tree {
+model Section {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   plotId        String    @map("plot_id") @db.Uuid
-  treeNumber    Int       @map("tree_number") // 1, 2, 3... within the plot
-  treeCode      String    @unique @map("tree_code") // Computed: "A1", "B3", etc.
-  variety       String?
-  plantedDate   DateTime? @map("planted_date") @db.Date
-  status        String?   @default("alive")
+  sectionNumber Int       @map("section_number")
+  sectionCode   String    @unique @map("section_code") @db.VarChar
+  name          String?   @db.VarChar
+  description   String?
+  area          Decimal?  @db.Decimal
+  soilType      String?   @map("soil_type") @db.VarChar
   createdAt     DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
-  treeHeight    Decimal?  @map("tree_height") @db.Decimal
-  trunkDiameter Decimal?  @map("trunk_diameter") @db.Decimal
-  flowerDate    DateTime? @map("flower_date") @db.Date
-  fruitCount    Int?      @default(0) @map("fruit_count")
-  deathDate     DateTime? @map("death_date") @db.Date
-  
-  // Relationships
-  plot          Plot      @relation(fields: [plotId], references: [id], onDelete: Cascade)
-  logs          TreeLog[]
+  plot          Plot      @relation(fields: [plotId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  trees         Tree[]
 
-  // Constraints
-  @@unique([plotId, treeNumber]) // Ensure unique tree numbers per plot
+  @@unique([plotId, sectionNumber])
+  @@map("sections")
+}
+
+model Tree {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  location_id    String
+  variety        String?
+  plantedDate    DateTime? @map("planted_date") @db.Date
+  status         String?   @default("alive")
+  createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  treeNumber     Int?      @default(1) @map("tree_number")
+  treeHeight     Decimal?  @map("tree_height") @db.Decimal
+  trunkDiameter  Decimal?  @map("trunk_diameter") @db.Decimal
+  flowerDate     DateTime? @map("flower_date") @db.Date
+  fruitCount     Int?      @default(0) @map("fruit_count")
+  deathDate      DateTime? @map("death_date") @db.Date
+  plot_id        String?   @db.Uuid
+  treeCode       String?   @unique @map("tree_code") @db.VarChar(10)
+  sectionId      String?   @map("section_id") @db.Uuid
+  bloomingStatus String?   @default("not_blooming") @map("blooming_status") @db.VarChar
+  logs           TreeLog[]
+  section        Section?  @relation(fields: [sectionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
   @@map("trees")
 }
 
@@ -68,14 +83,11 @@ model TreeLog {
 
 model BatchLog {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  plotId     String    @map("plot_id") @db.Uuid
+  plotId     String    @map("plot_id")
   logDate    DateTime  @map("log_date") @db.Date
   activityId String?   @map("activity_id") @db.Uuid
   notes      String?
   createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  
-  // Relationships
-  plot       Plot      @relation(fields: [plotId], references: [id], onDelete: Cascade)
   activities Activity? @relation(fields: [activityId], references: [id], onUpdate: NoAction)
 
   @@map("batch_logs")

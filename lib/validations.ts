@@ -2,13 +2,14 @@ import { z } from 'zod'
 
 // Tree validations
 export const createTreeSchema = z.object({
-  plotId: z.string().uuid('Invalid plot ID'),
+  sectionId: z.string().uuid('Invalid section ID'),
   variety: z.string().min(1, 'Variety is required'),
   datePlanted: z.string().or(z.date()).optional(),
   status: z.string().optional().default('alive'),
+  bloomingStatus: z.enum(['blooming', 'not_blooming', 'budding']).optional().default('not_blooming'),
 })
 
-export const updateTreeSchema = createTreeSchema.omit({ plotId: true }).partial()
+export const updateTreeSchema = createTreeSchema.omit({ sectionId: true }).partial()
 
 // Plot validations
 export const createPlotSchema = z.object({
@@ -20,6 +21,17 @@ export const createPlotSchema = z.object({
 })
 
 export const updatePlotSchema = createPlotSchema.omit({ code: true }).partial()
+
+// Section validations
+export const createSectionSchema = z.object({
+  plotId: z.string().uuid('Invalid plot ID'),
+  name: z.string().min(1, 'Section name is required').optional(),
+  description: z.string().optional(),
+  area: z.number().positive('Area must be positive').optional(),
+  soilType: z.string().optional(),
+})
+
+export const updateSectionSchema = createSectionSchema.omit({ plotId: true }).partial()
 
 // Tree Log validations
 export const createTreeLogSchema = z.object({
@@ -70,6 +82,8 @@ export type CreateTreeInput = z.infer<typeof createTreeSchema>
 export type UpdateTreeInput = z.infer<typeof updateTreeSchema>
 export type CreatePlotInput = z.infer<typeof createPlotSchema>
 export type UpdatePlotInput = z.infer<typeof updatePlotSchema>
+export type CreateSectionInput = z.infer<typeof createSectionSchema>
+export type UpdateSectionInput = z.infer<typeof updateSectionSchema>
 export type CreateTreeLogInput = z.infer<typeof createTreeLogSchema>
 export type UpdateTreeLogInput = z.infer<typeof updateTreeLogSchema>
 export type CreateBatchLogInput = z.infer<typeof createBatchLogSchema>
