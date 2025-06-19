@@ -56,10 +56,10 @@ export default function TreesPage() {
   const [plots, setPlots] = useState<Plot[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedPlot, setSelectedPlot] = useState<string>('')
-  const [selectedSection, setSelectedSection] = useState<string>('')
-  const [selectedStatus, setSelectedStatus] = useState<string>('')
-  const [selectedBloomingStatus, setSelectedBloomingStatus] = useState<string>('')
+  const [selectedPlot, setSelectedPlot] = useState<string>('all')
+  const [selectedSection, setSelectedSection] = useState<string>('all')
+  const [selectedStatus, setSelectedStatus] = useState<string>('all')
+  const [selectedBloomingStatus, setSelectedBloomingStatus] = useState<string>('all')
 
   useEffect(() => {
     fetchTrees()
@@ -78,7 +78,7 @@ export default function TreesPage() {
     try {
       const params = new URLSearchParams()
       if (searchQuery) params.append('search', searchQuery)
-      if (selectedSection) params.append('sectionId', selectedSection)
+      if (selectedSection && selectedSection !== 'all') params.append('sectionId', selectedSection)
       
       const response = await fetch(`/api/trees?${params}`)
       const result = await response.json()
@@ -87,17 +87,17 @@ export default function TreesPage() {
         let filteredTrees = result.data
 
         // Client-side filtering for additional criteria
-        if (selectedPlot) {
+        if (selectedPlot && selectedPlot !== 'all') {
           filteredTrees = filteredTrees.filter((tree: Tree) => 
             tree.section?.plot?.id === selectedPlot
           )
         }
-        if (selectedStatus) {
+        if (selectedStatus && selectedStatus !== 'all') {
           filteredTrees = filteredTrees.filter((tree: Tree) => 
             tree.status === selectedStatus
           )
         }
-        if (selectedBloomingStatus) {
+        if (selectedBloomingStatus && selectedBloomingStatus !== 'all') {
           filteredTrees = filteredTrees.filter((tree: Tree) => 
             tree.bloomingStatus === selectedBloomingStatus
           )
@@ -194,13 +194,13 @@ export default function TreesPage() {
 
   function clearFilters() {
     setSearchQuery('')
-    setSelectedPlot('')
-    setSelectedSection('')
-    setSelectedStatus('')
-    setSelectedBloomingStatus('')
+    setSelectedPlot('all')
+    setSelectedSection('all')
+    setSelectedStatus('all')
+    setSelectedBloomingStatus('all')
   }
 
-  const filteredSections = selectedPlot 
+  const filteredSections = selectedPlot && selectedPlot !== 'all'
     ? sections.filter(section => section.plot.id === selectedPlot)
     : sections
 
@@ -247,7 +247,7 @@ export default function TreesPage() {
                 <SelectValue placeholder="เลือกแปลง" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">ทุกแปลง</SelectItem>
+                <SelectItem value="all">ทุกแปลง</SelectItem>
                 {plots.map((plot) => (
                   <SelectItem key={plot.id} value={plot.id}>
                     {plot.code} - {plot.name}
@@ -261,7 +261,7 @@ export default function TreesPage() {
                 <SelectValue placeholder="เลือกแผนก" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">ทุกแผนก</SelectItem>
+                <SelectItem value="all">ทุกแผนก</SelectItem>
                 {filteredSections.map((section) => (
                   <SelectItem key={section.id} value={section.id}>
                     {section.sectionCode} - {section.name}
@@ -275,7 +275,7 @@ export default function TreesPage() {
                 <SelectValue placeholder="สถานะต้นไม้" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">ทุกสถานะ</SelectItem>
+                <SelectItem value="all">ทุกสถานะ</SelectItem>
                 <SelectItem value="alive">🌱 มีชีวิต</SelectItem>
                 <SelectItem value="dead">🪦 ตายแล้ว</SelectItem>
                 <SelectItem value="sick">🤒 ป่วย</SelectItem>
@@ -289,7 +289,7 @@ export default function TreesPage() {
                 <SelectValue placeholder="สถานะการออกดอก" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">ทุกสถานะ</SelectItem>
+                <SelectItem value="all">ทุกสถานะ</SelectItem>
                 <SelectItem value="blooming">🌸 กำลังออกดอก</SelectItem>
                 <SelectItem value="budding">🌿 มีดอกตูม</SelectItem>
                 <SelectItem value="not_blooming">🌱 ยังไม่ออกดอก</SelectItem>
