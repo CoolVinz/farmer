@@ -39,7 +39,7 @@ const GalleryPage: React.FC = () => {
     navigatePreview
   } = useImagePreview(filteredLogs);
 
-  const itemsPerPage = 15;
+  const itemsPerPage = 8;
   const { paginatedItems: paginatedLogs, totalPages } = calculatePagination(
     filteredLogs,
     page,

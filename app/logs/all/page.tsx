@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Navigation } from "@/components/Navigation";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 8;
 
 export default function LogsListPage() {
   const [logs, setLogs] = useState<any[]>([]);

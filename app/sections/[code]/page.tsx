@@ -45,6 +45,8 @@ export default function SectionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   // Form state for editing
   const [editForm, setEditForm] = useState({
@@ -61,13 +63,17 @@ export default function SectionDetailPage() {
   }, [sectionCode]);
 
   async function fetchSectionData() {
+    console.log('Fetching section data for:', sectionCode);
     try {
       // Fetch section details via API
       const response = await fetch(`/api/sections/${sectionCode}?includeTrees=true&includePlot=true`);
+      console.log('API Response status:', response.status);
       
       if (!response.ok) {
+        console.log('API Response not OK:', response.status, response.statusText);
         if (response.status === 404) {
           // Section not found
+          console.log('Section not found - 404');
           setSection(null);
           return;
         }
@@ -75,13 +81,21 @@ export default function SectionDetailPage() {
       }
 
       const result = await response.json();
+      console.log('API Response data:', result);
       
       if (result.success && result.data) {
         const { section: sectionData, trees: treesData } = result.data;
         
+        console.log('Setting section data:', sectionData);
         setSection(sectionData);
         setTrees(treesData || []);
         
+        console.log('Setting edit form with:', {
+          name: sectionData.name || '',
+          description: sectionData.description || '',
+          area: sectionData.area?.toString() || '',
+          soilType: sectionData.soilType || ''
+        });
         setEditForm({
           name: sectionData.name || '',
           description: sectionData.description || '',
@@ -191,6 +205,17 @@ export default function SectionDetailPage() {
     setEditing(false);
   }
 
+  // Calculate pagination for trees
+  const totalPages = Math.ceil(trees.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTrees = trees.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const getBloomingIcon = (status?: string) => {
     switch (status) {
       case 'blooming': return '🌸';
@@ -289,7 +314,13 @@ export default function SectionDetailPage() {
             
             <div className="flex items-center gap-3">
               {!editing ? (
-                <Button onClick={() => setEditing(true)} variant="outline">
+                <Button 
+                  onClick={() => {
+                    console.log('Edit button clicked');
+                    setEditing(true);
+                  }} 
+                  variant="outline"
+                >
                   ✏️ แก้ไขข้อมูล
                 </Button>
               ) : (
@@ -452,9 +483,16 @@ export default function SectionDetailPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>🌳 ต้นไม้ในแปลงย่อย</CardTitle>
-                  <Badge variant="outline">
-                    {trees.length} ต้น
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">
+                      {trees.length} ต้น
+                    </Badge>
+                    <Button size="sm" asChild className="bg-green-600 hover:bg-green-700">
+                      <Link href={`/trees/create?sectionCode=${section.sectionCode}`}>
+                        ➕ เพิ่มต้นไม้
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -467,13 +505,16 @@ export default function SectionDetailPage() {
                     <p className="text-gray-600 mb-4">
                       เริ่มต้นโดยการเพิ่มต้นไม้แรกในแปลงย่อย {section.sectionCode}
                     </p>
-                    <Button variant="outline">
-                      ➕ เพิ่มต้นไม้
+                    <Button variant="outline" asChild>
+                      <Link href={`/trees/create?sectionCode=${section.sectionCode}`}>
+                        ➕ เพิ่มต้นไม้
+                      </Link>
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {trees.map((tree) => (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {paginatedTrees.map((tree) => (
                       <Card key={tree.id} className="border border-gray-200">
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-3">
@@ -520,15 +561,76 @@ export default function SectionDetailPage() {
                             )}
                           </div>
                           
-                          <div className="mt-3 pt-3 border-t border-gray-200">
-                            <Button size="sm" variant="outline" className="w-full">
-                              📝 จัดการต้นไม้
+                          <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full"
+                              asChild
+                            >
+                              <Link href={`/trees/${tree.id}`}>
+                                👁️ ดูต้นไม้
+                              </Link>
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full"
+                              asChild
+                            >
+                              <Link href={`/trees/${tree.id}/edit`}>
+                                ✏️ แก้ไขต้นไม้
+                              </Link>
                             </Button>
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {trees.length > itemsPerPage && (
+                      <div className="mt-6">
+                        <div className="flex justify-center items-center gap-4">
+                          <Button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            variant="outline"
+                            size="sm"
+                          >
+                            ◀️ ก่อนหน้า
+                          </Button>
+                          
+                          <div className="flex items-center gap-2">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                              <Button
+                                key={page}
+                                onClick={() => handlePageChange(page)}
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                className="min-w-[40px]"
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                          </div>
+                          
+                          <Button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            variant="outline"
+                            size="sm"
+                          >
+                            ถัดไป ▶️
+                          </Button>
+                        </div>
+                        
+                        <div className="text-center text-sm text-gray-600 mt-2">
+                          แสดง {startIndex + 1}-{Math.min(endIndex, trees.length)} จาก {trees.length} ต้น
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
 import { Navigation } from "@/components/Navigation";
@@ -60,7 +60,21 @@ const Section = ({
   removeItem,
 }: SectionProps) => {
   const [searchTerm, setSearchTerm] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 8
+  
   const filteredItems = useFilteredItems(items, searchTerm)
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedItems = filteredItems.slice(startIndex, endIndex)
+  
+  // Reset page when search changes
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm])
 
   return (
     <Card className="mb-6">
@@ -103,8 +117,8 @@ const Section = ({
           />
         )}
         
-        <div className="space-y-2 max-h-60 overflow-y-auto">
-          {filteredItems.map((item) => (
+        <div className="space-y-2">
+          {paginatedItems.map((item) => (
             <div key={item.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
               <span>{item.name}</span>
               <Button
@@ -120,6 +134,39 @@ const Section = ({
             <p className="text-gray-500 text-center py-4">ไม่พบข้อมูลที่ค้นหา</p>
           )}
         </div>
+        
+        {/* Pagination Controls */}
+        {filteredItems.length > itemsPerPage && (
+          <div className="mt-4">
+            <div className="flex justify-center items-center gap-2">
+              <Button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                variant="outline"
+                size="sm"
+              >
+                ◀️
+              </Button>
+              
+              <span className="text-sm text-gray-600">
+                หน้า {currentPage} จาก {totalPages}
+              </span>
+              
+              <Button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                variant="outline"
+                size="sm"
+              >
+                ▶️
+              </Button>
+            </div>
+            
+            <div className="text-center text-xs text-gray-500 mt-1">
+              แสดง {startIndex + 1}-{Math.min(endIndex, filteredItems.length)} จาก {filteredItems.length} รายการ
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

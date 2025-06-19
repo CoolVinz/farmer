@@ -12,7 +12,7 @@ import SingleLogSection, { SingleLog } from "../../components/SingleLogSection";
 import BatchLogSection, { BatchLog } from "../../components/BatchLogSection";
 import CostLogSection, { CostLog } from "../../components/CostLogSection";
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 8;
 
 export default function LogsPage() {
   // Single logs state

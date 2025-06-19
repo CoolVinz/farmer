@@ -18,6 +18,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "react-hot-toast";
+import { YieldManager } from "@/components/YieldManager";
+import { YieldHistoryChart } from "@/components/YieldHistoryChart";
+import { YieldAnalytics } from "@/components/YieldAnalytics";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getTimePeriods } from "@/lib/utils/yieldCalculations";
 
 interface Tree {
   id: string;
@@ -55,6 +60,11 @@ export default function TreeDetailPage() {
   const params = useParams();
   const [tree, setTree] = useState<Tree | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Yield trends state
+  const [yieldData, setYieldData] = useState<any>(null);
+  const [yieldLoading, setYieldLoading] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState('30days');
 
   useEffect(() => {
     if (params.id) {
@@ -100,6 +110,42 @@ export default function TreeDetailPage() {
       console.error("Error deleting tree:", error);
       toast.error("เกิดข้อผิดพลาดในการลบต้นไม้");
     }
+  }
+
+  function handleYieldUpdate(newYield: number) {
+    if (tree) {
+      setTree({ ...tree, fruitCount: newYield });
+      // Refresh yield data when yield is updated
+      if (yieldData) {
+        fetchYieldData(selectedPeriod);
+      }
+    }
+  }
+
+  async function fetchYieldData(period: string) {
+    if (!tree) return;
+    
+    setYieldLoading(true);
+    try {
+      const response = await fetch(`/api/trees/${tree.id}/yield?period=${period}&analytics=true`);
+      const result = await response.json();
+      
+      if (result.success) {
+        setYieldData(result.data);
+      } else {
+        toast.error('ไม่สามารถโหลดข้อมูลแนวโน้มได้');
+      }
+    } catch (error) {
+      console.error('Error fetching yield data:', error);
+      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+    } finally {
+      setYieldLoading(false);
+    }
+  }
+
+  function handlePeriodChange(period: string) {
+    setSelectedPeriod(period);
+    fetchYieldData(period);
   }
 
   function getStatusBadge(status: string) {
@@ -242,6 +288,8 @@ export default function TreeDetailPage() {
         <TabsList>
           <TabsTrigger value="info">📋 ข้อมูลต้นไม้</TabsTrigger>
           <TabsTrigger value="logs">📜 ประวัติการดูแล</TabsTrigger>
+          <TabsTrigger value="harvest">📊 ประวัติการเก็บเกี่ยว</TabsTrigger>
+          <TabsTrigger value="trends">📈 แนวโน้มผลผลิต</TabsTrigger>
           <TabsTrigger value="photos">📷 รูปภาพ</TabsTrigger>
         </TabsList>
 
@@ -354,6 +402,24 @@ export default function TreeDetailPage() {
               </CardContent>
             </Card>
 
+            {/* Yield Management */}
+            <YieldManager
+              treeId={tree.id}
+              currentYield={tree.fruitCount}
+              onYieldUpdate={handleYieldUpdate}
+              onViewTrends={() => {
+                // Switch to trends tab
+                const trendsTab = document.querySelector('[value="trends"]') as HTMLElement;
+                if (trendsTab) {
+                  trendsTab.click();
+                  // Fetch yield data if not already loaded
+                  if (!yieldData) {
+                    fetchYieldData(selectedPeriod);
+                  }
+                }
+              }}
+            />
+
             {/* Quick Actions */}
             <Card>
               <CardHeader>
@@ -368,6 +434,13 @@ export default function TreeDetailPage() {
                   variant="outline"
                 >
                   📝 เพิ่มบันทึกการดูแล
+                </Button>
+
+                <Button
+                  onClick={() => router.push(`/trees/${tree.id}/harvest/add`)}
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  📊 บันทึกการเก็บเกี่ยว
                 </Button>
 
                 <Button
@@ -465,6 +538,170 @@ export default function TreeDetailPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Harvest History */}
+        <TabsContent value="harvest">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                📊 ประวัติการเก็บเกี่ยว
+                <Button
+                  onClick={() => router.push(`/trees/${tree.id}/harvest/add`)}
+                  size="sm"
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  ➕ บันทึกการเก็บเกี่ยว
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {tree.logs && tree.logs.filter(log => log.activityType === 'harvest').length > 0 ? (
+                <div className="space-y-4">
+                  {tree.logs
+                    .filter(log => log.activityType === 'harvest')
+                    .map((log) => (
+                      <div key={log.id} className="border rounded-lg p-4 bg-orange-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-medium text-orange-800">🥭 การเก็บเกี่ยว</p>
+                            <p className="text-sm text-gray-600">
+                              {new Date(log.logDate).toLocaleDateString("th-TH")}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded-full">
+                              เก็บเกี่ยว
+                            </span>
+                          </div>
+                        </div>
+
+                        {log.notes && (
+                          <div className="text-sm text-gray-700 mb-2">
+                            <strong>รายละเอียด:</strong> {log.notes}
+                          </div>
+                        )}
+
+                        {log.imageUrl && (
+                          <div className="mt-2">
+                            <img
+                              src={log.imageUrl}
+                              alt="รูปภาพการเก็บเกี่ยว"
+                              className="w-32 h-32 object-cover rounded-lg"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="text-4xl mb-2">📊</div>
+                  <p>ยังไม่มีประวัติการเก็บเกี่ยว</p>
+                  <Button
+                    onClick={() => router.push(`/trees/${tree.id}/harvest/add`)}
+                    className="mt-4 bg-orange-600 hover:bg-orange-700"
+                  >
+                    บันทึกการเก็บเกี่ยวครั้งแรก
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Yield Trends */}
+        <TabsContent value="trends">
+          <div className="space-y-6">
+            {/* Period Selector */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  📅 เลือกช่วงเวลา
+                  <Button
+                    onClick={() => fetchYieldData(selectedPeriod)}
+                    size="sm"
+                    variant="outline"
+                    disabled={yieldLoading}
+                  >
+                    🔄 รีเฟรช
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <label className="text-sm font-medium text-gray-700">ช่วงเวลา:</label>
+                  <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(getTimePeriods()).map(([key, period]) => (
+                        <SelectItem key={key} value={key}>
+                          {period.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {yieldData && (
+                    <div className="text-sm text-gray-600">
+                      {yieldData.events?.length || 0} เหตุการณ์ในช่วงนี้
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Yield History Chart */}
+            <YieldHistoryChart
+              data={yieldData?.trendData || []}
+              period={selectedPeriod}
+              loading={yieldLoading}
+            />
+
+            {/* Yield Analytics */}
+            <YieldAnalytics
+              analytics={yieldData?.analytics || null}
+              loading={yieldLoading}
+            />
+
+            {/* Quick Actions */}
+            {yieldData && yieldData.events?.length === 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>🚀 เริ่มต้นติดตามผลผลิต</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-6">
+                    <div className="text-4xl mb-4">📊</div>
+                    <p className="text-gray-600 mb-4">
+                      ยังไม่มีข้อมูลการเปลี่ยนแปลงผลผลิตในช่วงเวลานี้
+                    </p>
+                    <div className="flex justify-center gap-3">
+                      <Button
+                        onClick={() => {
+                          // Switch to info tab to see yield manager
+                          const infoTab = document.querySelector('[data-state="inactive"][value="info"]') as HTMLElement;
+                          if (infoTab) infoTab.click();
+                        }}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        📝 อัปเดตจำนวนผลไม้
+                      </Button>
+                      <Button
+                        onClick={() => router.push(`/trees/${tree.id}/harvest/add`)}
+                        variant="outline"
+                        className="text-orange-600 hover:text-orange-700"
+                      >
+                        🥭 บันทึกการเก็บเกี่ยว
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         {/* Photos */}

@@ -32,15 +32,23 @@ interface Tree {
   }
 }
 
+interface Variety {
+  id: string
+  name: string
+}
+
 export default function EditTreePage() {
   const router = useRouter()
   const params = useParams()
   const [tree, setTree] = useState<Tree | null>(null)
+  const [varieties, setVarieties] = useState<Variety[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showCustomVariety, setShowCustomVariety] = useState(false)
   
   const [formData, setFormData] = useState({
     variety: '',
+    customVariety: '',
     status: 'alive',
     bloomingStatus: 'not_blooming',
     datePlanted: ''
@@ -50,7 +58,21 @@ export default function EditTreePage() {
     if (params.id) {
       fetchTree(params.id as string)
     }
+    fetchVarieties()
   }, [params.id])
+
+  async function fetchVarieties() {
+    try {
+      const response = await fetch('/api/varieties')
+      const result = await response.json()
+      
+      if (result.success) {
+        setVarieties(result.data)
+      }
+    } catch (error) {
+      console.error('Error fetching varieties:', error)
+    }
+  }
 
   async function fetchTree(id: string) {
     try {
@@ -60,12 +82,19 @@ export default function EditTreePage() {
       if (result.success) {
         const treeData = result.data
         setTree(treeData)
+        // Check if variety exists in the dropdown list
+        const varietyExists = varieties.some(v => v.name === treeData.variety)
+        const shouldShowCustom = treeData.variety && !varietyExists
+        
         setFormData({
-          variety: treeData.variety || '',
+          variety: varietyExists ? treeData.variety : (shouldShowCustom ? 'custom' : ''),
+          customVariety: shouldShowCustom ? treeData.variety : '',
           status: treeData.status || 'alive',
           bloomingStatus: treeData.bloomingStatus || 'not_blooming',
           datePlanted: treeData.plantedDate ? treeData.plantedDate.split('T')[0] : ''
         })
+        
+        setShowCustomVariety(shouldShowCustom)
       } else {
         toast.error('ไม่พบข้อมูลต้นไม้')
         router.push('/trees')
@@ -81,8 +110,10 @@ export default function EditTreePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     
-    if (!formData.variety) {
-      toast.error('กรุณากรอกพันธุ์ต้นไม้')
+    const finalVariety = formData.variety === 'custom' ? formData.customVariety : formData.variety
+    
+    if (!finalVariety || finalVariety.trim() === '') {
+      toast.error('กรุณาเลือกหรือกรอกพันธุ์ต้นไม้')
       return
     }
 
@@ -95,7 +126,7 @@ export default function EditTreePage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          variety: formData.variety,
+          variety: finalVariety,
           status: formData.status,
           bloomingStatus: formData.bloomingStatus,
           datePlanted: formData.datePlanted || null
@@ -123,6 +154,14 @@ export default function EditTreePage() {
       ...prev,
       [field]: value
     }))
+    
+    // Handle variety selection
+    if (field === 'variety') {
+      setShowCustomVariety(value === 'custom')
+      if (value !== 'custom') {
+        setFormData(prev => ({ ...prev, customVariety: '' }))
+      }
+    }
   }
 
   function getStatusBadge(status: string) {
@@ -213,12 +252,31 @@ export default function EditTreePage() {
               {/* Variety */}
               <div className="space-y-2">
                 <Label>พันธุ์ <span className="text-red-500">*</span></Label>
-                <Input
-                  value={formData.variety}
-                  onChange={(e) => updateFormData('variety', e.target.value)}
-                  placeholder="เช่น มะม่วงน้ำดอกไม้, มะม่วงโบราณ"
-                  required
-                />
+                <Select 
+                  value={formData.variety} 
+                  onValueChange={(value) => updateFormData('variety', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกพันธุ์ต้นไม้" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {varieties.map((variety) => (
+                      <SelectItem key={variety.id} value={variety.name}>
+                        {variety.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">🖊️ ระบุพันธุ์อื่น</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {showCustomVariety && (
+                  <Input
+                    value={formData.customVariety}
+                    onChange={(e) => updateFormData('customVariety', e.target.value)}
+                    placeholder="ระบุพันธุ์ต้นไม้"
+                    className="mt-2"
+                  />
+                )}
               </div>
 
               {/* Planted Date */}
@@ -279,7 +337,7 @@ export default function EditTreePage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={saving || !formData.variety}
+                  disabled={saving || (!formData.variety || formData.variety === '' || (formData.variety === 'custom' && (!formData.customVariety || formData.customVariety.trim() === '')))}
                   className="flex-1 bg-green-600 hover:bg-green-700"
                 >
                   {saving ? '⏳ กำลังบันทึก...' : '✅ บันทึกข้อมูล'}
@@ -340,14 +398,23 @@ export default function EditTreePage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-600">พันธุ์:</span>
                 <div className="text-right">
-                  {tree.variety !== formData.variety && (
-                    <div className="text-xs text-gray-500 line-through">
-                      {tree.variety || 'ไม่ระบุ'}
-                    </div>
-                  )}
-                  <div className={tree.variety !== formData.variety ? 'text-blue-600 font-medium' : ''}>
-                    {formData.variety || 'ไม่ระบุ'}
-                  </div>
+                  {(() => {
+                    const finalVariety = formData.variety === 'custom' ? formData.customVariety : formData.variety
+                    const hasChanged = tree.variety !== finalVariety
+                    
+                    return (
+                      <>
+                        {hasChanged && (
+                          <div className="text-xs text-gray-500 line-through">
+                            {tree.variety || 'ไม่ระบุ'}
+                          </div>
+                        )}
+                        <div className={hasChanged ? 'text-blue-600 font-medium' : ''}>
+                          {finalVariety || 'ไม่ระบุ'}
+                        </div>
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
 
@@ -394,16 +461,19 @@ export default function EditTreePage() {
               </div>
 
               {/* Changes Summary */}
-              {(tree.variety !== formData.variety || 
-                tree.status !== formData.status || 
-                tree.bloomingStatus !== formData.bloomingStatus || 
-                (tree.plantedDate?.split('T')[0] || '') !== formData.datePlanted) && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    💡 มีการเปลี่ยนแปลงข้อมูล - กดบันทึกเพื่อยืนยัน
-                  </p>
-                </div>
-              )}
+              {(() => {
+                const finalVariety = formData.variety === 'custom' ? formData.customVariety : formData.variety
+                return (tree.variety !== finalVariety || 
+                  tree.status !== formData.status || 
+                  tree.bloomingStatus !== formData.bloomingStatus || 
+                  (tree.plantedDate?.split('T')[0] || '') !== formData.datePlanted) && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      💡 มีการเปลี่ยนแปลงข้อมูล - กดบันทึกเพื่อยืนยัน
+                    </p>
+                  </div>
+                )
+              })()}
             </CardContent>
           </Card>
 

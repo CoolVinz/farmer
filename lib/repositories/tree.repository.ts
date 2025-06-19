@@ -211,6 +211,7 @@ export class TreeRepository {
     if (data.status) updateData.status = data.status
     if (data.bloomingStatus) updateData.bloomingStatus = data.bloomingStatus
     if (data.datePlanted) updateData.plantedDate = new Date(data.datePlanted)
+    if (data.fruitCount !== undefined) updateData.fruitCount = data.fruitCount
 
     return prisma.tree.update({
       where: { id },

@@ -7,6 +7,7 @@ export const createTreeSchema = z.object({
   datePlanted: z.string().or(z.date()).optional(),
   status: z.string().optional().default('alive'),
   bloomingStatus: z.enum(['blooming', 'not_blooming', 'budding']).optional().default('not_blooming'),
+  fruitCount: z.number().int().min(0, 'Fruit count must be non-negative').optional(),
 })
 
 export const updateTreeSchema = createTreeSchema.omit({ sectionId: true }).partial()

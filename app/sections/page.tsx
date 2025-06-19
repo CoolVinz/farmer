@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -49,7 +49,7 @@ export default function SectionsPage() {
   const [selectedPlot, setSelectedPlot] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
-  const [itemsPerPage] = useState(12); // Show 12 sections per page
+  const [itemsPerPage] = useState(8); // Show 8 sections per page
 
   useEffect(() => {
     fetchData();
@@ -62,10 +62,10 @@ export default function SectionsPage() {
   async function fetchData() {
     try {
       // Fetch plots via API
-      const plotsResponse = await fetch('/api/plots?includeTreeCount=true');
+      const plotsResponse = await fetch("/api/plots?includeTreeCount=true");
 
       if (!plotsResponse.ok) {
-        throw new Error('Failed to fetch plots');
+        throw new Error("Failed to fetch plots");
       }
 
       const plotsResult = await plotsResponse.json();
@@ -73,19 +73,37 @@ export default function SectionsPage() {
       if (plotsResult.success) {
         setPlots(plotsResult.data);
       } else {
-        throw new Error('API returned error for plots');
+        throw new Error("API returned error for plots");
       }
     } catch (error) {
-      console.warn('Using fallback data for plots');
+      console.warn("Using fallback data for plots");
       // Fallback plots data
       const fallbackPlots = [
-        { id: '1', code: 'A', name: 'Garden Plot A', sectionCount: 61, treeCount: 98 },
-        { id: '2', code: 'B', name: 'Garden Plot B', sectionCount: 0, treeCount: 0 },
-        { id: '3', code: 'C', name: 'Garden Plot C', sectionCount: 0, treeCount: 0 }
+        {
+          id: "1",
+          code: "A",
+          name: "Garden Plot A",
+          sectionCount: 61,
+          treeCount: 98,
+        },
+        {
+          id: "2",
+          code: "B",
+          name: "Garden Plot B",
+          sectionCount: 0,
+          treeCount: 0,
+        },
+        {
+          id: "3",
+          code: "C",
+          name: "Garden Plot C",
+          sectionCount: 0,
+          treeCount: 0,
+        },
       ];
       setPlots(fallbackPlots);
     }
-    
+
     // Initial sections fetch
     await fetchSections();
   }
@@ -93,19 +111,19 @@ export default function SectionsPage() {
   async function fetchSections() {
     try {
       setLoading(true);
-      
+
       // Build URL with pagination and filters
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: itemsPerPage.toString(),
-        includeTreeCount: 'true',
-        includePlot: 'true'
+        includeTreeCount: "true",
+        includePlot: "true",
       });
-      
+
       if (selectedPlot !== "all") {
-        const plotData = plots.find(p => p.code === selectedPlot);
+        const plotData = plots.find((p) => p.code === selectedPlot);
         if (plotData) {
-          params.append('plotId', plotData.id);
+          params.append("plotId", plotData.id);
         }
       }
 
@@ -116,19 +134,22 @@ export default function SectionsPage() {
         setSections(result.data);
         setPagination(result.pagination);
       } else {
-        throw new Error('API returned error for sections');
+        throw new Error("API returned error for sections");
       }
     } catch (error) {
-      console.warn('Using fallback data for sections');
+      console.warn("Using fallback data for sections");
       // Fallback sections data
-      const fallbackSections = Array.from({ length: Math.min(itemsPerPage, 61) }, (_, i) => ({
-        id: `section-${i + 1}`,
-        sectionCode: `A${i + 1}`,
-        name: `Section A${i + 1}`,
-        description: `แปลงย่อยที่ ${i + 1}`,
-        treeCount: Math.floor(Math.random() * 3) + 1,
-        plot: { code: 'A', name: 'Garden Plot A' }
-      }));
+      const fallbackSections = Array.from(
+        { length: Math.min(itemsPerPage, 61) },
+        (_, i) => ({
+          id: `section-${i + 1}`,
+          sectionCode: `A${i + 1}`,
+          name: `Section A${i + 1}`,
+          description: `โคกที่ ${i + 1}`,
+          treeCount: Math.floor(Math.random() * 3) + 1,
+          plot: { code: "A", name: "Garden Plot A" },
+        })
+      );
 
       setSections(fallbackSections);
       setPagination({
@@ -137,7 +158,7 @@ export default function SectionsPage() {
         total: 61,
         totalPages: Math.ceil(61 / itemsPerPage),
         hasNextPage: currentPage < Math.ceil(61 / itemsPerPage),
-        hasPreviousPage: currentPage > 1
+        hasPreviousPage: currentPage > 1,
       });
     } finally {
       setLoading(false);
@@ -145,10 +166,12 @@ export default function SectionsPage() {
   }
 
   // Filter sections based on search (plot filtering is now handled in API)
-  const filteredSections = sections.filter(section => {
-    return section.sectionCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           section.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           section.description?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredSections = sections.filter((section) => {
+    return (
+      section.sectionCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      section.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      section.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   });
 
   // Handle page changes
@@ -164,7 +187,7 @@ export default function SectionsPage() {
 
   // Group sections by plot
   const sectionsByPlot = filteredSections.reduce((acc, section) => {
-    const plotCode = section.plot?.code || 'Unknown';
+    const plotCode = section.plot?.code || "Unknown";
     if (!acc[plotCode]) {
       acc[plotCode] = [];
     }
@@ -180,7 +203,7 @@ export default function SectionsPage() {
           <Card>
             <CardContent className="p-12 text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">กำลังโหลดข้อมูลแปลงย่อย...</p>
+              <p className="text-gray-600">กำลังโหลดข้อมูลโคก...</p>
             </CardContent>
           </Card>
         </div>
@@ -191,36 +214,40 @@ export default function SectionsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      
+
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-4">
-              🌿 จัดการแปลงย่อย
+              🌿 จัดการโคก
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              จัดการข้อมูลแปลงย่อยและต้นไม้ในแต่ละแปลง
+              จัดการข้อมูลโคกและต้นไม้ในแต่ละโคก
             </p>
-            
+
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl mb-2">🏞️</div>
-                  <div className="text-2xl font-bold text-green-600">{plots.length}</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {plots.length}
+                  </div>
                   <div className="text-sm text-gray-600">แปลงหลัก</div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl mb-2">📋</div>
-                  <div className="text-2xl font-bold text-emerald-600">{pagination?.total || sections.length}</div>
-                  <div className="text-sm text-gray-600">แปลงย่อยทั้งหมด</div>
+                  <div className="text-2xl font-bold text-emerald-600">
+                    {pagination?.total || sections.length}
+                  </div>
+                  <div className="text-sm text-gray-600">โคกทั้งหมด</div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl mb-2">🌳</div>
@@ -230,32 +257,40 @@ export default function SectionsPage() {
                   <div className="text-sm text-gray-600">ต้นไม้ทั้งหมด</div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl mb-2">🔍</div>
-                  <div className="text-2xl font-bold text-blue-600">{filteredSections.length}</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {filteredSections.length}
+                  </div>
                   <div className="text-sm text-gray-600">แปลงที่แสดง</div>
                 </CardContent>
               </Card>
             </div>
-            
+
             {/* Quick Actions */}
             <div className="flex flex-wrap justify-center gap-4">
-              <Button asChild variant="outline" className="bg-white/80 backdrop-blur">
-                <Link href="/admin-prisma">
-                  🔧 จัดการข้อมูลอ้างอิง
-                </Link>
+              <Button
+                asChild
+                variant="outline"
+                className="bg-white/80 backdrop-blur"
+              >
+                <Link href="/admin-prisma">🔧 จัดการข้อมูลอ้างอิง</Link>
               </Button>
-              <Button asChild variant="outline" className="bg-white/80 backdrop-blur">
-                <Link href="/logs/add-batch">
-                  📝 บันทึกกิจกรรมแปลง
-                </Link>
+              <Button
+                asChild
+                variant="outline"
+                className="bg-white/80 backdrop-blur"
+              >
+                <Link href="/logs/add-batch">📝 บันทึกกิจกรรมแปลง</Link>
               </Button>
-              <Button asChild variant="outline" className="bg-white/80 backdrop-blur">
-                <Link href="/plots">
-                  🏞️ ดูแปลงหลัก
-                </Link>
+              <Button
+                asChild
+                variant="outline"
+                className="bg-white/80 backdrop-blur"
+              >
+                <Link href="/plots">🏞️ ดูแปลงหลัก</Link>
               </Button>
             </div>
           </div>
@@ -272,7 +307,7 @@ export default function SectionsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ค้นหาแปลงย่อย
+                  ค้นหาโคก
                 </label>
                 <Input
                   type="text"
@@ -281,7 +316,7 @@ export default function SectionsPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   กรองตามแปลงหลัก
@@ -294,17 +329,18 @@ export default function SectionsPage() {
                   <option value="all">แสดงทุกแปลง</option>
                   {plots.map((plot) => (
                     <option key={plot.id} value={plot.code}>
-                      แปลง {plot.code} ({plot.sectionCount} แปลงย่อย)
+                      แปลง {plot.code} ({plot.sectionCount} โคก)
                     </option>
                   ))}
                 </select>
               </div>
             </div>
-            
+
             {(searchTerm || selectedPlot !== "all") && (
               <div className="mt-4 flex items-center gap-4">
                 <Badge variant="outline">
-                  แสดง {filteredSections.length} จาก {pagination?.total || sections.length} แปลงย่อย
+                  แสดง {filteredSections.length} จาก{" "}
+                  {pagination?.total || sections.length} โคก
                 </Badge>
                 <Button
                   variant="ghost"
@@ -323,8 +359,8 @@ export default function SectionsPage() {
 
         {/* Sections by Plot */}
         {Object.entries(sectionsByPlot).map(([plotCode, plotSections]) => {
-          const plot = plots.find(p => p.code === plotCode);
-          
+          const plot = plots.find((p) => p.code === plotCode);
+
           return (
             <div key={plotCode} className="mb-8">
               <div className="flex items-center justify-between mb-4">
@@ -332,20 +368,25 @@ export default function SectionsPage() {
                   แปลง {plotCode} - {plot?.name}
                 </h2>
                 <Badge variant="outline" className="text-lg px-3 py-1">
-                  {plotSections.length} แปลงย่อย
+                  แสดงผลทีละ {plotSections.length} โคก
                 </Badge>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {plotSections.map((section) => (
-                  <Card key={section.id} className="hover:shadow-lg transition-shadow duration-200">
+                  <Card
+                    key={section.id}
+                    className="hover:shadow-lg transition-shadow duration-200"
+                  >
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">
                           {section.sectionCode}
                         </CardTitle>
-                        <Badge 
-                          variant={section.treeCount > 0 ? "default" : "secondary"}
+                        <Badge
+                          variant={
+                            section.treeCount > 0 ? "default" : "secondary"
+                          }
                           className="text-xs"
                         >
                           {section.treeCount} ต้น
@@ -363,23 +404,25 @@ export default function SectionsPage() {
                           </p>
                         )}
                       </div>
-                      
+
                       {section.area && (
                         <div className="text-sm text-gray-600">
-                          <span className="font-medium">พื้นที่:</span> {section.area} ไร่
+                          <span className="font-medium">พื้นที่:</span>{" "}
+                          {section.area} ไร่
                         </div>
                       )}
-                      
+
                       {section.soilType && (
                         <div className="text-sm text-gray-600">
-                          <span className="font-medium">ประเภทดิน:</span> {section.soilType}
+                          <span className="font-medium">ประเภทดิน:</span>{" "}
+                          {section.soilType}
                         </div>
                       )}
-                      
+
                       <div className="pt-3 border-t border-gray-200 space-y-2">
                         <Button asChild size="sm" className="w-full">
                           <Link href={`/sections/${section.sectionCode}`}>
-                            📝 จัดการแปลงย่อย
+                            📝 จัดการโคก
                           </Link>
                         </Button>
                       </div>
@@ -396,19 +439,19 @@ export default function SectionsPage() {
             <CardContent className="p-12 text-center">
               <div className="text-6xl mb-4">🔍</div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                ไม่พบแปลงย่อยที่ค้นหา
+                ไม่พบโคกที่ค้นหา
               </h3>
               <p className="text-gray-600 mb-4">
                 ลองเปลี่ยนคำค้นหาหรือเลือกแปลงหลักอื่น
               </p>
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => {
                   setSearchTerm("");
                   handlePlotChange("all");
                 }}
               >
-                แสดงทุกแปลงย่อย
+                แสดงทุกโคก
               </Button>
             </CardContent>
           </Card>

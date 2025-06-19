@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ interface Disease {
 }
 
 export default function AddSingleLogPage() {
+  const searchParams = useSearchParams();
   const [trees, setTrees] = useState<Tree[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [fertilizers, setFertilizers] = useState<Fertilizer[]>([]);
@@ -58,7 +60,13 @@ export default function AddSingleLogPage() {
     fetchAllData();
     // Set default date to today
     setLogDate(new Date().toISOString().split("T")[0]);
-  }, []);
+    
+    // Auto-select tree if treeId is provided in URL
+    const urlTreeId = searchParams.get('treeId');
+    if (urlTreeId) {
+      setTreeId(urlTreeId);
+    }
+  }, [searchParams]);
 
   async function fetchAllData() {
     try {
@@ -88,6 +96,16 @@ export default function AddSingleLogPage() {
       setLoading(false);
     }
   }
+
+  // Update tree search display when trees are loaded and treeId is set
+  useEffect(() => {
+    if (trees.length > 0 && treeId && !treeSearch) {
+      const selectedTree = trees.find(tree => tree.id === treeId);
+      if (selectedTree) {
+        setTreeSearch(`${selectedTree.location_id} - ${selectedTree.tree_number}`);
+      }
+    }
+  }, [trees, treeId, treeSearch]);
 
   async function handleSubmit() {
     if (!treeId) {
