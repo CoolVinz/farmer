@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast } from "react-hot-toast";
 import Link from "next/link";
 
 interface TreeStats {
@@ -47,6 +47,31 @@ function LoadingSkeleton() {
 
 function TreeStatsSection({ stats, loading }: { stats: TreeStats; loading: boolean }) {
   if (loading) return <LoadingSkeleton />
+
+  // Show empty state if no trees
+  if (stats.total === 0) {
+    return (
+      <Card className="bg-gray-50">
+        <CardContent className="p-12 text-center">
+          <div className="text-gray-400 text-6xl mb-4">🌳</div>
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">ยังไม่มีข้อมูลต้นไม้</h3>
+          <p className="text-gray-600 mb-6">เริ่มต้นด้วยการเพิ่มต้นไม้แรกของคุณ</p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Button asChild className="bg-green-600 hover:bg-green-700">
+              <Link href="/trees/create">
+                เพิ่มต้นไม้ใหม่
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin-prisma">
+                ตั้งค่าระบบ
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   const healthPercentage = stats.total > 0 ? ((stats.alive / stats.total) * 100).toFixed(1) : '0'
   const fruitingPercentage = stats.total > 0 ? ((stats.fruiting / stats.total) * 100).toFixed(1) : '0'
@@ -185,78 +210,63 @@ function CostSummarySection({ stats, loading }: { stats: CostStats; loading: boo
 
 export default function ReportPage() {
   const [trees, setTrees] = useState<any[]>([])
-  const [costs, setCosts] = useState<any[]>([])
   const [varieties, setVarieties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Fetch data when component mounts, but only in browser
-    if (typeof window !== 'undefined') {
-      const timeoutId = setTimeout(() => {
-        setLoading(false)
-        setError('การโหลดข้อมูลใช้เวลานานเกินไป อาจเป็นเพราะยังไม่มีข้อมูลในฐานข้อมูล')
-      }, 5000)
-
-      // Safely call fetchAllData
-      try {
-        fetchAllData()
-      } catch (error) {
-        console.error('Error in useEffect:', error)
-        setLoading(false)
-        setError('เกิดข้อผิดพลาดในการเริ่มต้นโหลดข้อมูล')
-      }
-
-      return () => clearTimeout(timeoutId)
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    fetchAllData()
+  }, [])
 
   async function fetchAllData() {
     try {
-      // Check if supabase is available
-      if (!supabase) {
-        throw new Error('Supabase client not initialized')
-      }
+      setLoading(true)
+      setError(null)
 
-      const [treesResult, costsResult, varietiesResult] = await Promise.allSettled([
-        supabase.from("trees").select("*"),
-        supabase.from("tree_costs").select("*"),
-        supabase.from("varieties").select("*")
+      // Use API endpoints instead of direct Supabase calls
+      const [treesResponse, varietiesResponse] = await Promise.all([
+        fetch('/api/trees'),
+        fetch('/api/varieties')
       ])
 
-      if (treesResult.status === 'fulfilled') {
-        setTrees(treesResult.value.data || [])
-      } else {
-        console.error('Trees fetch failed:', treesResult.reason)
+      if (!treesResponse.ok || !varietiesResponse.ok) {
+        throw new Error('Failed to fetch data from API')
       }
-      
-      if (costsResult.status === 'fulfilled') {
-        setCosts(costsResult.value.data || [])
+
+      const treesResult = await treesResponse.json()
+      const varietiesResult = await varietiesResponse.json()
+
+      if (treesResult.success) {
+        setTrees(treesResult.data || [])
       } else {
-        console.error('Costs fetch failed:', costsResult.reason)
+        console.error('Trees API error:', treesResult.error)
+        throw new Error('Trees API returned error')
       }
-      
-      if (varietiesResult.status === 'fulfilled') {
-        setVarieties(varietiesResult.value.data || [])
+
+      if (varietiesResult.success) {
+        setVarieties(varietiesResult.data || [])
       } else {
-        console.error('Varieties fetch failed:', varietiesResult.reason)
+        console.error('Varieties API error:', varietiesResult.error)
+        // Varieties is not critical, continue without error
+        setVarieties([])
       }
     } catch (error) {
       console.error('Error fetching data:', error)
-      setError('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + (error as Error).message)
+      setError('การโหลดข้อมูลใช้เวลานานเกินไป อาจเป็นเพราะยังไม่มีข้อมูลในฐานข้อมูล')
+      toast.error('ไม่สามารถโหลดข้อมูลรายงานได้')
     } finally {
       setLoading(false)
     }
   }
 
-  // Calculate tree statistics safely
+  // Calculate tree statistics safely (using Prisma field names)
   const treeStats: TreeStats = {
     total: Array.isArray(trees) ? trees.length : 0,
     alive: Array.isArray(trees) ? trees.filter((t) => t?.status === "alive").length : 0,
     dead: Array.isArray(trees) ? trees.filter((t) => t?.status === "dead").length : 0,
-    totalFruits: Array.isArray(trees) ? trees.reduce((sum, t) => sum + (t?.fruit_count || 0), 0) : 0,
-    fruiting: Array.isArray(trees) ? trees.filter((t) => (t?.fruit_count || 0) > 0).length : 0,
-    avgFruit: Array.isArray(trees) && trees.length > 0 ? (trees.reduce((sum, t) => sum + (t?.fruit_count || 0), 0) / trees.length).toFixed(2) : "0.00",
+    totalFruits: Array.isArray(trees) ? trees.reduce((sum, t) => sum + (t?.fruitCount || 0), 0) : 0,
+    fruiting: Array.isArray(trees) ? trees.filter((t) => (t?.fruitCount || 0) > 0).length : 0,
+    avgFruit: Array.isArray(trees) && trees.length > 0 ? (trees.reduce((sum, t) => sum + (t?.fruitCount || 0), 0) / trees.length).toFixed(2) : "0.00",
     varietyStats: Array.isArray(trees) ? trees.reduce((acc, tree) => {
       if (tree?.variety) {
         acc[tree.variety] = (acc[tree.variety] || 0) + 1
@@ -269,19 +279,12 @@ export default function ReportPage() {
     }
   }
 
-  // Calculate cost statistics safely
-  const totalCost = Array.isArray(costs) ? costs.reduce((sum, c) => sum + (c?.cost || 0), 0) : 0
-  const monthsInOperation = 12 // Assuming 1 year of operation, adjust as needed
+  // Simple cost statistics (placeholder for now)
   const costStats: CostStats = {
-    totalCost,
-    avgMonthlyCost: monthsInOperation > 0 ? totalCost / monthsInOperation : 0,
-    costByActivity: Array.isArray(costs) ? costs.reduce((acc, cost) => {
-      if (cost?.activity && cost?.cost) {
-        acc[cost.activity] = (acc[cost.activity] || 0) + cost.cost
-      }
-      return acc
-    }, {} as { [key: string]: number }) : {},
-    recentCosts: Array.isArray(costs) ? costs.slice(-5) : [] // Last 5 costs
+    totalCost: 0,
+    avgMonthlyCost: 0,
+    costByActivity: {},
+    recentCosts: []
   }
 
   // Top varieties
@@ -380,39 +383,65 @@ export default function ReportPage() {
             <p className="text-gray-600">พันธุ์ทุเรียนที่มีจำนวนมากที่สุดในสวน</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {topVarieties.map(([variety, count], index) => (
-              <Card key={variety} className={`border-l-4 ${
-                index === 0 ? 'border-l-yellow-500 bg-yellow-50' :
-                index === 1 ? 'border-l-gray-400 bg-gray-50' :
-                'border-l-orange-500 bg-orange-50'
-              }`}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold">{variety}</h3>
-                      <p className="text-2xl font-bold text-gray-800">{count} ต้น</p>
-                      <p className="text-sm text-gray-600">
-                        {((count / treeStats.total) * 100).toFixed(1)}% ของทั้งหมด
-                      </p>
+          {topVarieties.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {topVarieties.map(([variety, count], index) => (
+                <Card key={variety} className={`border-l-4 ${
+                  index === 0 ? 'border-l-yellow-500 bg-yellow-50' :
+                  index === 1 ? 'border-l-gray-400 bg-gray-50' :
+                  'border-l-orange-500 bg-orange-50'
+                }`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold">{variety}</h3>
+                        <p className="text-2xl font-bold text-gray-800">{count} ต้น</p>
+                        <p className="text-sm text-gray-600">
+                          {((count / treeStats.total) * 100).toFixed(1)}% ของทั้งหมด
+                        </p>
+                      </div>
+                      <div className="text-3xl">
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                      </div>
                     </div>
-                    <div className="text-3xl">
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="bg-gray-50">
+              <CardContent className="p-8 text-center">
+                <div className="text-gray-400 text-4xl mb-4">🌱</div>
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">ยังไม่มีข้อมูลพันธุ์</h3>
+                <p className="text-gray-600 mb-4">เพิ่มต้นไม้ในระบบเพื่อดูสถิติพันธุ์</p>
+                <Button asChild>
+                  <Link href="/trees/create">
+                    เพิ่มต้นไม้ใหม่ →
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </section>
 
-        {/* Cost Summary */}
+        {/* Cost Summary - Placeholder */}
         <section>
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">💰 สรุปค่าใช้จ่าย</h2>
             <p className="text-gray-600">ข้อมูลการลงทุนและต้นทุนการดำเนินงาน</p>
           </div>
-          <CostSummarySection stats={costStats} loading={loading} />
+          <Card className="bg-gray-50">
+            <CardContent className="p-8 text-center">
+              <div className="text-gray-400 text-4xl mb-4">📊</div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">ฟีเจอร์กำลังพัฒนา</h3>
+              <p className="text-gray-600 mb-4">ระบบติดตามค่าใช้จ่ายจะพร้อมใช้งานในอนาคต</p>
+              <Button asChild variant="outline">
+                <Link href="/report/cost">
+                  ดูรายงานต้นทุนแบบทดสอบ →
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </section>
 
         {/* Quick Actions */}
@@ -489,25 +518,14 @@ export default function ReportPage() {
                 <CardTitle className="text-blue-700">💼 สรุปการลงทุน</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span>ลงทุนรวม</span>
-                    <span className="font-bold text-blue-600">
-                      {costStats.totalCost.toLocaleString()} บาท
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>ต้นทุนต่อต้น</span>
-                    <span className="font-bold text-purple-600">
-                      {treeStats.total > 0 ? (costStats.totalCost / treeStats.total).toLocaleString() : '0'} บาท/ต้น
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>ค่าใช้จ่ายเฉลี่ย/เดือน</span>
-                    <span className="font-bold text-orange-600">
-                      {costStats.avgMonthlyCost.toLocaleString()} บาท
-                    </span>
-                  </div>
+                <div className="space-y-4 text-center">
+                  <div className="text-gray-400 text-3xl mb-2">💼</div>
+                  <p className="text-gray-600">ระบบติดตามค่าใช้จ่ายกำลังพัฒนา</p>
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/report/cost">
+                      ดูรายงานต้นทุน →
+                    </Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/ui/pagination";
 import { toast } from "react-hot-toast";
 
 interface SectionData {
@@ -31,48 +32,96 @@ interface PlotSummary {
   treeCount: number;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 export default function SectionsPage() {
   const [sections, setSections] = useState<SectionData[]>([]);
   const [plots, setPlots] = useState<PlotSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPlot, setSelectedPlot] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [itemsPerPage] = useState(12); // Show 12 sections per page
 
   useEffect(() => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    fetchSections();
+  }, [currentPage, selectedPlot]);
+
   async function fetchData() {
     try {
-      // Fetch plots and sections via API
-      const [plotsResponse, sectionsResponse] = await Promise.all([
-        fetch('/api/plots?includeTreeCount=true'),
-        fetch('/api/sections?includeTreeCount=true&includePlot=true')
-      ]);
+      // Fetch plots via API
+      const plotsResponse = await fetch('/api/plots?includeTreeCount=true');
 
-      if (!plotsResponse.ok || !sectionsResponse.ok) {
-        throw new Error('Failed to fetch data');
+      if (!plotsResponse.ok) {
+        throw new Error('Failed to fetch plots');
       }
 
       const plotsResult = await plotsResponse.json();
-      const sectionsResult = await sectionsResponse.json();
 
-      if (plotsResult.success && sectionsResult.success) {
+      if (plotsResult.success) {
         setPlots(plotsResult.data);
-        setSections(sectionsResult.data);
       } else {
-        throw new Error('API returned error');
+        throw new Error('API returned error for plots');
       }
     } catch (error) {
-      console.warn('Using fallback data for sections');
-      // Fallback data
+      console.warn('Using fallback data for plots');
+      // Fallback plots data
       const fallbackPlots = [
         { id: '1', code: 'A', name: 'Garden Plot A', sectionCount: 61, treeCount: 98 },
         { id: '2', code: 'B', name: 'Garden Plot B', sectionCount: 0, treeCount: 0 },
         { id: '3', code: 'C', name: 'Garden Plot C', sectionCount: 0, treeCount: 0 }
       ];
+      setPlots(fallbackPlots);
+    }
+    
+    // Initial sections fetch
+    await fetchSections();
+  }
 
-      const fallbackSections = Array.from({ length: 61 }, (_, i) => ({
+  async function fetchSections() {
+    try {
+      setLoading(true);
+      
+      // Build URL with pagination and filters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString(),
+        includeTreeCount: 'true',
+        includePlot: 'true'
+      });
+      
+      if (selectedPlot !== "all") {
+        const plotData = plots.find(p => p.code === selectedPlot);
+        if (plotData) {
+          params.append('plotId', plotData.id);
+        }
+      }
+
+      const response = await fetch(`/api/sections?${params}`);
+      const result = await response.json();
+
+      if (result.success) {
+        setSections(result.data);
+        setPagination(result.pagination);
+      } else {
+        throw new Error('API returned error for sections');
+      }
+    } catch (error) {
+      console.warn('Using fallback data for sections');
+      // Fallback sections data
+      const fallbackSections = Array.from({ length: Math.min(itemsPerPage, 61) }, (_, i) => ({
         id: `section-${i + 1}`,
         sectionCode: `A${i + 1}`,
         name: `Section A${i + 1}`,
@@ -81,23 +130,37 @@ export default function SectionsPage() {
         plot: { code: 'A', name: 'Garden Plot A' }
       }));
 
-      setPlots(fallbackPlots);
       setSections(fallbackSections);
+      setPagination({
+        page: currentPage,
+        limit: itemsPerPage,
+        total: 61,
+        totalPages: Math.ceil(61 / itemsPerPage),
+        hasNextPage: currentPage < Math.ceil(61 / itemsPerPage),
+        hasPreviousPage: currentPage > 1
+      });
     } finally {
       setLoading(false);
     }
   }
 
-  // Filter sections based on search and plot selection
+  // Filter sections based on search (plot filtering is now handled in API)
   const filteredSections = sections.filter(section => {
-    const matchesSearch = section.sectionCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         section.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         section.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesPlot = selectedPlot === "all" || section.plot?.code === selectedPlot;
-    
-    return matchesSearch && matchesPlot;
+    return section.sectionCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           section.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           section.description?.toLowerCase().includes(searchTerm.toLowerCase());
   });
+
+  // Handle page changes
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Handle plot filter change
+  const handlePlotChange = (plotCode: string) => {
+    setSelectedPlot(plotCode);
+    setCurrentPage(1); // Reset to first page when changing filter
+  };
 
   // Group sections by plot
   const sectionsByPlot = filteredSections.reduce((acc, section) => {
@@ -153,7 +216,7 @@ export default function SectionsPage() {
               <Card className="bg-white/80 backdrop-blur border-0 shadow-lg">
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl mb-2">📋</div>
-                  <div className="text-2xl font-bold text-emerald-600">{sections.length}</div>
+                  <div className="text-2xl font-bold text-emerald-600">{pagination?.total || sections.length}</div>
                   <div className="text-sm text-gray-600">แปลงย่อยทั้งหมด</div>
                 </CardContent>
               </Card>
@@ -225,7 +288,7 @@ export default function SectionsPage() {
                 </label>
                 <select
                   value={selectedPlot}
-                  onChange={(e) => setSelectedPlot(e.target.value)}
+                  onChange={(e) => handlePlotChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="all">แสดงทุกแปลง</option>
@@ -241,14 +304,14 @@ export default function SectionsPage() {
             {(searchTerm || selectedPlot !== "all") && (
               <div className="mt-4 flex items-center gap-4">
                 <Badge variant="outline">
-                  แสดง {filteredSections.length} จาก {sections.length} แปลงย่อย
+                  แสดง {filteredSections.length} จาก {pagination?.total || sections.length} แปลงย่อย
                 </Badge>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
                     setSearchTerm("");
-                    setSelectedPlot("all");
+                    handlePlotChange("all");
                   }}
                 >
                   ล้างตัวกรอง
@@ -342,12 +405,27 @@ export default function SectionsPage() {
                 variant="outline"
                 onClick={() => {
                   setSearchTerm("");
-                  setSelectedPlot("all");
+                  handlePlotChange("all");
                 }}
               >
                 แสดงทุกแปลงย่อย
               </Button>
             </CardContent>
+          </Card>
+        )}
+
+        {/* Pagination */}
+        {pagination && pagination.totalPages > 1 && (
+          <Card className="mt-6">
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+              hasNextPage={pagination.hasNextPage}
+              hasPreviousPage={pagination.hasPreviousPage}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+            />
           </Card>
         )}
       </main>

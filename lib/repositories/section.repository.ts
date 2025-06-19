@@ -22,6 +22,8 @@ export class SectionRepository {
     includeTrees?: boolean
     includeTreeCount?: boolean
     includePlot?: boolean
+    skip?: number
+    take?: number
   }) {
     const include: any = {}
     
@@ -44,6 +46,8 @@ export class SectionRepository {
         { plot: { code: 'asc' } },
         { sectionNumber: 'asc' }
       ],
+      skip: options?.skip,
+      take: options?.take,
     })
 
     if (options?.includeTreeCount) {
@@ -423,5 +427,16 @@ export class SectionRepository {
       variety,
       count
     }))
+  }
+
+  // Count sections with optional filtering
+  async count(options?: {
+    plotId?: string
+  }): Promise<number> {
+    const whereClause = options?.plotId ? { plotId: options.plotId } : undefined
+    
+    return prisma.section.count({
+      where: whereClause
+    })
   }
 }
