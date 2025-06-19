@@ -49,14 +49,14 @@ export default function CreateTreePage() {
 
   async function fetchSections() {
     try {
-      const response = await fetch('/api/sections')
+      const response = await fetch('/api/sections?includePlot=true')
       const result = await response.json()
       if (result.success) {
         setSections(result.data)
       }
     } catch (error) {
       console.error('Error fetching sections:', error)
-      toast.error('ไม่สามารถโหลดข้อมูลแผนกได้')
+      toast.error('ไม่สามารถโหลดข้อมูลโคกได้')
     }
   }
 
@@ -165,21 +165,27 @@ export default function CreateTreePage() {
 
             {/* Section Selection */}
             <div className="space-y-2">
-              <Label>แผนก <span className="text-red-500">*</span></Label>
+              <Label>โคก <span className="text-red-500">*</span></Label>
               <Select 
                 value={formData.sectionId} 
                 onValueChange={(value) => updateFormData('sectionId', value)}
                 disabled={!selectedPlot}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="เลือกแผนก" />
+                  <SelectValue placeholder="เลือกโคก" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredSections.map((section) => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.sectionCode} - {section.name}
-                    </SelectItem>
-                  ))}
+                  {filteredSections.length > 0 ? (
+                    filteredSections.map((section) => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {section.sectionCode} - {section.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      {selectedPlot ? 'ไม่พบโคกในแปลงที่เลือก' : 'กรุณาเลือกแปลงก่อน'}
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
               {!selectedPlot && (
@@ -275,7 +281,7 @@ export default function CreateTreePage() {
           <CardContent>
             <div className="space-y-2 text-sm">
               <div><strong>แปลง:</strong> {plots.find(p => p.id === selectedPlot)?.name || 'ไม่ระบุ'}</div>
-              <div><strong>แผนก:</strong> {sections.find(s => s.id === formData.sectionId)?.name || 'ไม่ระบุ'}</div>
+              <div><strong>โคก:</strong> {sections.find(s => s.id === formData.sectionId)?.name || 'ไม่ระบุ'}</div>
               <div><strong>พันธุ์:</strong> {formData.variety}</div>
               <div><strong>วันที่ปลูก:</strong> {new Date(formData.datePlanted).toLocaleDateString('th-TH')}</div>
               <div><strong>สถานะ:</strong> 
