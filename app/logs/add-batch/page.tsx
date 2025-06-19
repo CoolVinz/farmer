@@ -310,7 +310,7 @@ export default function AddBatchLogPage() {
                           </div>
                           <div>
                             <span className="text-gray-600">จำนวนต้น:</span>
-                            <span className="ml-2 font-medium">{selectedPlotData.tree_count} ต้น</span>
+                            <span className="ml-2 font-medium">{selectedPlotData.treeCount} ต้น</span>
                           </div>
                         </div>
                       </div>

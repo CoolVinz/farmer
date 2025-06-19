@@ -172,7 +172,7 @@ async function migrateToHierarchicalStructure() {
     console.log('\\n🔤 Sample Tree Codes:')
     finalTrees.slice(0, 15).forEach(tree => {
       const status = tree.bloomingStatus === 'blooming' ? '🌸' : '🌱'
-      console.log(`   ${tree.treeCode} ${status} (${tree.section.plot.code})`)
+      console.log(`   ${tree.treeCode} ${status} (${tree.section?.plot?.code || 'No Plot'})`)
     })
 
     // Show blooming status distribution

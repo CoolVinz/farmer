@@ -39,7 +39,11 @@ export class PlotRepository {
       const plotsWithCounts = await Promise.all(
         plots.map(async (plot) => {
           const treeCount = await prisma.tree.count({
-            where: { plotId: plot.id }
+            where: { 
+              section: {
+                plotId: plot.id
+              }
+            }
           })
           return {
             ...plot,
@@ -75,7 +79,11 @@ export class PlotRepository {
 
     if (options?.includeTreeCount) {
       const treeCount = await prisma.tree.count({
-        where: { plotId: id }
+        where: { 
+          section: {
+            plotId: id
+          }
+        }
       })
       return {
         ...plot,
@@ -108,7 +116,11 @@ export class PlotRepository {
 
     if (options?.includeTreeCount) {
       const treeCount = await prisma.tree.count({
-        where: { plotId: plot.id }
+        where: { 
+          section: {
+            plotId: plot.id
+          }
+        }
       })
       return {
         ...plot,
@@ -162,8 +174,7 @@ export class PlotRepository {
         area: true,
         _count: {
           select: {
-            trees: true,
-            batchLogs: true
+            sections: true
           }
         }
       },
@@ -172,8 +183,7 @@ export class PlotRepository {
 
     return stats.map(plot => ({
       ...plot,
-      treeCount: plot._count.trees,
-      batchLogCount: plot._count.batchLogs
+      sectionCount: plot._count.sections
     }))
   }
 
@@ -182,13 +192,17 @@ export class PlotRepository {
     const plot = await prisma.plot.findUnique({
       where: { id: plotId },
       include: {
-        trees: {
-          select: {
-            id: true,
-            treeCode: true,
-            status: true,
-            variety: true,
-            fruitCount: true
+        sections: {
+          include: {
+            trees: {
+              select: {
+                id: true,
+                treeCode: true,
+                status: true,
+                variety: true,
+                fruitCount: true
+              }
+            }
           }
         }
       }
@@ -196,13 +210,16 @@ export class PlotRepository {
 
     if (!plot) return null
 
+    // Flatten trees from all sections
+    const allTrees = plot.sections.flatMap(section => section.trees)
+
     const healthSummary = {
-      totalTrees: plot.trees.length,
-      aliveTrees: plot.trees.filter(t => t.status === 'alive').length,
-      deadTrees: plot.trees.filter(t => t.status === 'dead').length,
-      sickTrees: plot.trees.filter(t => t.status === 'sick').length,
-      totalFruits: plot.trees.reduce((sum, t) => sum + (t.fruitCount || 0), 0),
-      varietyBreakdown: this.getVarietyBreakdown(plot.trees)
+      totalTrees: allTrees.length,
+      aliveTrees: allTrees.filter(t => t.status === 'alive').length,
+      deadTrees: allTrees.filter(t => t.status === 'dead').length,
+      sickTrees: allTrees.filter(t => t.status === 'sick').length,
+      totalFruits: allTrees.reduce((sum, t) => sum + (t.fruitCount || 0), 0),
+      varietyBreakdown: this.getVarietyBreakdown(allTrees)
     }
 
     return {
@@ -214,7 +231,11 @@ export class PlotRepository {
   // Get next available tree number for a plot
   async getNextTreeNumber(plotId: string): Promise<number> {
     const lastTree = await prisma.tree.findFirst({
-      where: { plotId },
+      where: { 
+        section: {
+          plotId 
+        }
+      },
       orderBy: { treeNumber: 'desc' },
       select: { treeNumber: true }
     })
@@ -244,8 +265,8 @@ export class PlotRepository {
 
     return prisma.plot.findMany({
       where: {
-        OR: [
-          {
+        sections: {
+          some: {
             trees: {
               some: {
                 logs: {
@@ -255,21 +276,13 @@ export class PlotRepository {
                 }
               }
             }
-          },
-          {
-            batchLogs: {
-              some: {
-                logDate: { gte: cutoffDate }
-              }
-            }
           }
-        ]
+        }
       },
       include: {
         _count: {
           select: {
-            trees: true,
-            batchLogs: true
+            sections: true
           }
         }
       },

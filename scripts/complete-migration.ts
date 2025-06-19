@@ -45,7 +45,11 @@ async function completeMigration() {
     // Initialize plot tree counts (including existing trees)
     for (const plot of plots) {
       const existingCount = await prisma.tree.count({
-        where: { plotId: plot.id }
+        where: { 
+          section: {
+            plotId: plot.id
+          }
+        }
       })
       plotTreeCounts.set(plot.id, existingCount)
     }
@@ -102,7 +106,6 @@ async function completeMigration() {
         await prisma.tree.update({
           where: { id: tree.id },
           data: {
-            plotId: plotId,
             treeNumber: newTreeNumber,
             treeCode: treeCode
           }
@@ -151,8 +154,7 @@ async function completeMigration() {
       include: {
         _count: {
           select: {
-            trees: true,
-            batchLogs: true
+            sections: true
           }
         }
       },
@@ -161,21 +163,25 @@ async function completeMigration() {
 
     console.log('\n📊 Final Plot Summary:')
     finalSummary.forEach(plot => {
-      console.log(`   Plot ${plot.code}: ${plot._count.trees} trees, ${plot._count.batchLogs} batch logs`)
+      console.log(`   Plot ${plot.code}: ${plot._count.sections} sections`)
     })
 
     // Show sample tree codes
     const sampleTrees = await prisma.tree.findMany({
       take: 15,
       include: {
-        plot: true
+        section: {
+          include: {
+            plot: true
+          }
+        }
       },
       orderBy: { treeCode: 'asc' }
     })
 
     console.log('\n🔤 Sample Tree Codes:')
     sampleTrees.forEach(tree => {
-      console.log(`   ${tree.treeCode} (${tree.plot?.name})`)
+      console.log(`   ${tree.treeCode} (${tree.section?.plot?.name})`)
     })
 
   } catch (error) {

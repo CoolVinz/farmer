@@ -18,7 +18,9 @@ async function distributeTrees() {
     // Get all trees currently in plot A
     const allTrees = await prisma.tree.findMany({
       where: { 
-        plot: { code: 'A' }
+        section: {
+          plot: { code: 'A' }
+        }
       },
       orderBy: { treeNumber: 'asc' }
     })
@@ -45,7 +47,6 @@ async function distributeTrees() {
       await prisma.tree.update({
         where: { id: tree.id },
         data: {
-          plotId: plots.find(p => p.code === 'B')!.id,
           treeNumber: newTreeNumber,
           treeCode: newTreeCode
         }
@@ -63,7 +64,6 @@ async function distributeTrees() {
       await prisma.tree.update({
         where: { id: tree.id },
         data: {
-          plotId: plots.find(p => p.code === 'C')!.id,
           treeNumber: newTreeNumber,
           treeCode: newTreeCode
         }
@@ -96,9 +96,9 @@ async function distributeTrees() {
 
     // Show final summary
     const finalSummary = await Promise.all([
-      prisma.tree.count({ where: { plot: { code: 'A' } } }),
-      prisma.tree.count({ where: { plot: { code: 'B' } } }),
-      prisma.tree.count({ where: { plot: { code: 'C' } } })
+      prisma.tree.count({ where: { section: { plot: { code: 'A' } } } }),
+      prisma.tree.count({ where: { section: { plot: { code: 'B' } } } }),
+      prisma.tree.count({ where: { section: { plot: { code: 'C' } } } })
     ])
 
     console.log('\n📊 Final Distribution:')
@@ -108,21 +108,21 @@ async function distributeTrees() {
 
     // Show sample tree codes from each plot
     const sampleA = await prisma.tree.findMany({
-      where: { plot: { code: 'A' } },
+      where: { section: { plot: { code: 'A' } } },
       take: 5,
       orderBy: { treeNumber: 'asc' },
       select: { treeCode: true }
     })
 
     const sampleB = await prisma.tree.findMany({
-      where: { plot: { code: 'B' } },
+      where: { section: { plot: { code: 'B' } } },
       take: 5,
       orderBy: { treeNumber: 'asc' },
       select: { treeCode: true }
     })
 
     const sampleC = await prisma.tree.findMany({
-      where: { plot: { code: 'C' } },
+      where: { section: { plot: { code: 'C' } } },
       take: 5,
       orderBy: { treeNumber: 'asc' },
       select: { treeCode: true }

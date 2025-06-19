@@ -182,6 +182,7 @@ export class TreeRepository {
 
     const treeData = {
       sectionId: data.sectionId,
+      location_id: `${treeCode}`, // Use tree code as location ID
       treeNumber,
       treeCode,
       variety: data.variety,
@@ -246,6 +247,10 @@ export class TreeRepository {
     // Get section details
     const sectionSummaries = await Promise.all(
       result.map(async (item) => {
+        if (!item.sectionId) {
+          return { ...item, sectionCode: null, sectionName: null, plotCode: null, plotName: null }
+        }
+        
         const section = await prisma.section.findUnique({
           where: { id: item.sectionId },
           select: { 
@@ -271,7 +276,12 @@ export class TreeRepository {
       })
     )
     
-    return sectionSummaries.sort((a, b) => a.sectionCode.localeCompare(b.sectionCode))
+    return sectionSummaries.sort((a, b) => {
+      if (!a.sectionCode && !b.sectionCode) return 0
+      if (!a.sectionCode) return 1
+      if (!b.sectionCode) return -1
+      return a.sectionCode.localeCompare(b.sectionCode)
+    })
   }
 
   // Get plot summaries (aggregated from sections)

@@ -1,15 +1,12 @@
 import { NextRequest } from 'next/server'
 import { sectionRepository, treeRepository } from '@/lib/repositories'
 
-interface RouteContext {
-  params: {
-    code: string
-  }
-}
-
-export async function GET(request: NextRequest, { params }: RouteContext) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
   try {
-    const { code } = params
+    const { code } = await params
     const { searchParams } = new URL(request.url)
     const includeTrees = searchParams.get('includeTrees') === 'true'
     const includePlot = searchParams.get('includePlot') === 'true'
@@ -31,7 +28,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     }
 
     // Get trees separately for better control
-    let trees = []
+    let trees: any[] = []
     if (includeTrees) {
       try {
         trees = await treeRepository.findBySectionCode(code)
@@ -70,9 +67,12 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteContext) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
   try {
-    const { code } = params
+    const { code } = await params
     const body = await request.json()
     const { name, description, area, soilType } = body
 
@@ -114,9 +114,12 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteContext) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
   try {
-    const { code } = params
+    const { code } = await params
 
     // First find the section to get its ID
     const existingSection = await sectionRepository.findBySectionCode(code)

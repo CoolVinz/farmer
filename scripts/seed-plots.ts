@@ -45,8 +45,7 @@ async function seedPlots() {
       include: {
         _count: {
           select: {
-            trees: true,
-            batchLogs: true
+            sections: true
           }
         }
       },
@@ -55,7 +54,7 @@ async function seedPlots() {
 
     console.log('\n📊 Plot Summary:')
     plotSummary.forEach(plot => {
-      console.log(`   ${plot.code}: ${plot.name} (${plot._count.trees} trees, ${plot._count.batchLogs} batch logs)`)
+      console.log(`   ${plot.code}: ${plot.name} (${plot._count.sections} sections)`)
     })
 
   } catch (error) {

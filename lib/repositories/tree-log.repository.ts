@@ -128,8 +128,8 @@ export class TreeLogRepository {
             OR: [
               { treeCode: { contains: query, mode: 'insensitive' } },
               { variety: { contains: query, mode: 'insensitive' } },
-              { plot: { code: { contains: query, mode: 'insensitive' } } },
-              { plot: { name: { contains: query, mode: 'insensitive' } } },
+              { section: { plot: { code: { contains: query, mode: 'insensitive' } } } },
+              { section: { plot: { name: { contains: query, mode: 'insensitive' } } } },
             ]
           }},
         ],
@@ -137,7 +137,11 @@ export class TreeLogRepository {
       include: {
         tree: {
           include: {
-            plot: true
+            section: {
+              include: {
+                plot: true
+              }
+            }
           }
         },
       },

@@ -61,7 +61,7 @@ async function checkHierarchicalStatus() {
       newTrees.slice(0, 10).forEach(tree => {
         const status = tree.bloomingStatus === 'blooming' ? '🌸' : 
                       tree.bloomingStatus === 'budding' ? '🌿' : '🌱'
-        console.log(`   ${tree.treeCode} ${status} (Section: ${tree.section.sectionCode})`)
+        console.log(`   ${tree.treeCode} ${status} (Section: ${tree.section?.sectionCode || 'No Section'})`)
       })
 
       // Show blooming status distribution
