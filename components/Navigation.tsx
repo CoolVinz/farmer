@@ -20,10 +20,16 @@ export function Navigation() {
 export function NavigationCard() {
   const menuItems = [
     {
+      href: '/trees',
+      title: '🌳 จัดการต้นไม้',
+      description: 'ดู เพิ่ม แก้ไข ลบต้นไม้ในสวน',
+      bgColor: 'bg-green-100 hover:bg-green-200',
+    },
+    {
       href: '/logs',
       title: '➕ บันทึกข้อมูลต้นไม้',
       description: 'เพิ่มข้อมูลปุ๋ย น้ำ รูปภาพ',
-      bgColor: 'bg-green-100 hover:bg-green-200',
+      bgColor: 'bg-lime-100 hover:bg-lime-200',
     },
     {
       href: '/sections',
