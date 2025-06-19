@@ -116,7 +116,7 @@ export default function CreateTreePage() {
   }
 
   const filteredSections = selectedPlot 
-    ? sections.filter(section => section.plot.id === selectedPlot)
+    ? sections.filter(section => section.plot?.id === selectedPlot)
     : sections
 
   return (
