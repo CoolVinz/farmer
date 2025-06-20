@@ -60,6 +60,8 @@ export default function TreesPage() {
   const [selectedSection, setSelectedSection] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedBloomingStatus, setSelectedBloomingStatus] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 8
 
   useEffect(() => {
     fetchTrees()
@@ -72,6 +74,10 @@ export default function TreesPage() {
       fetchTrees()
     }, 300)
     return () => clearTimeout(delayedSearch)
+  }, [searchQuery, selectedPlot, selectedSection, selectedStatus, selectedBloomingStatus])
+
+  useEffect(() => {
+    setCurrentPage(1)
   }, [searchQuery, selectedPlot, selectedSection, selectedStatus, selectedBloomingStatus])
 
   async function fetchTrees() {
@@ -198,6 +204,18 @@ export default function TreesPage() {
     setSelectedSection('all')
     setSelectedStatus('all')
     setSelectedBloomingStatus('all')
+    setCurrentPage(1)
+  }
+
+  // Calculate pagination
+  const totalPages = Math.ceil(trees.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedTrees = trees.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const filteredSections = selectedPlot && selectedPlot !== 'all'
@@ -305,7 +323,7 @@ export default function TreesPage() {
 
       {/* Trees Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {trees.map((tree) => (
+        {paginatedTrees.map((tree) => (
           <Card key={tree.id} className="hover:shadow-lg transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
@@ -392,6 +410,51 @@ export default function TreesPage() {
           </Card>
         ))}
       </div>
+
+      {/* Pagination Controls */}
+      {trees.length > itemsPerPage && (
+        <Card className="mt-6">
+          <CardContent className="py-4">
+            <div className="flex justify-center items-center gap-4">
+              <Button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                variant="outline"
+                size="sm"
+              >
+                ◀️ ก่อนหน้า
+              </Button>
+              
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    className="min-w-[40px]"
+                  >
+                    {page}
+                  </Button>
+                ))}
+              </div>
+              
+              <Button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                variant="outline"
+                size="sm"
+              >
+                ถัดไป ▶️
+              </Button>
+            </div>
+            
+            <div className="text-center text-sm text-gray-600 mt-2">
+              แสดง {startIndex + 1}-{Math.min(endIndex, trees.length)} จาก {trees.length} ต้น
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {trees.length === 0 && (
         <Card className="text-center py-8">

@@ -1,0 +1,32 @@
+{
+  "output": {
+    "filePath": "repomix-output.txt",
+    "style": "markdown",
+    "removeComments": false,
+    "showLineNumbers": true
+  },
+  "include": ["**/*"],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "node_modules/**",
+      ".next/**", 
+      ".git/**",
+      "*.log",
+      "temp",
+      "temp/**",
+      "lib/generated/**",
+      "package-lock.json",
+      "*.map",
+      "*.svg",
+      "*.png",
+      "*.jpg",
+      "*.jpeg",
+      "*.ico"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}
