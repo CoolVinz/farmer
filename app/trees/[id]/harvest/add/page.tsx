@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { SimpleImageUpload } from '@/components/ImageUpload'
 import { toast } from 'react-hot-toast'
 
 interface Tree {
@@ -34,8 +35,7 @@ export default function AddHarvestPage() {
   const [tree, setTree] = useState<Tree | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   
   const [formData, setFormData] = useState({
     harvestDate: new Date().toISOString().split('T')[0],
@@ -93,7 +93,8 @@ export default function AddHarvestPage() {
         activityType: 'harvest',
         notes: `เก็บเกี่ยว: ${formData.quantity ? `${formData.quantity} ลูก` : ''} ${formData.weight ? `${formData.weight} กก.` : ''} คุณภาพ: ${formData.qualityGrade}${formData.notes ? ` - ${formData.notes}` : ''}`,
         healthStatus: null,
-        fertilizerType: null
+        fertilizerType: null,
+        imagePath: imageUrl || null
       }
       
       const response = await fetch('/api/trees/logs', {
@@ -140,14 +141,10 @@ export default function AddHarvestPage() {
     }))
   }
 
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (file) {
-      setImageFile(file)
-      const url = URL.createObjectURL(file)
-      setPreviewUrl(url)
-    }
+  function handleImageUploaded(url: string) {
+    setImageUrl(url)
   }
+
 
   if (loading) {
     return (
@@ -266,20 +263,11 @@ export default function AddHarvestPage() {
               {/* Image Upload */}
               <div className="space-y-2">
                 <Label>รูปภาพการเก็บเกี่ยว</Label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
+                <SimpleImageUpload
+                  onImageUploaded={handleImageUploaded}
+                  currentImageUrl={imageUrl}
+                  disabled={saving}
                 />
-                {previewUrl && (
-                  <div className="mt-2">
-                    <img
-                      src={previewUrl}
-                      alt="ตัวอย่างรูปภาพ"
-                      className="w-32 h-32 object-cover rounded-lg"
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Action Buttons */}

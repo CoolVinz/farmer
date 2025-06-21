@@ -1,6 +1,6 @@
-# สวนวิสุทธิ์ศิริ - Farm Management System
+# สวนวิสุทธิ์ศิริ - Durian Farm Management System
 
-A Next.js application for managing tree/farm data with yield tracking, maintenance logs, and analytics.
+A Next.js application for managing durian farm data with yield tracking, maintenance logs, image storage, and analytics.
 
 ## 🚀 Quick Start
 
@@ -21,10 +21,11 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ## 📊 Features
 
-- **Tree Management** - Track individual trees with locations and varieties
+- **Durian Tree Management** - Track individual durian trees with locations and varieties
 - **Maintenance Logs** - Record fertilizer, health status, and care activities
-- **Yield Tracking** - Monitor fruit production with time-period analytics
+- **Yield Tracking** - Monitor durian production with time-period analytics (kg-based)
 - **Cost Management** - Track expenses for farming activities
+- **Image Storage** - Upload and manage tree photos with Supabase Storage
 - **Gallery** - View uploaded images from maintenance logs
 - **Reports & Analytics** - Data visualization with Chart.js
 
@@ -41,7 +42,8 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 ## 🏗️ Tech Stack
 
 - **Framework**: Next.js 15 with App Router
-- **Database**: PostgreSQL with Prisma ORM
+- **Database**: Supabase PostgreSQL with Prisma ORM
+- **Storage**: Supabase Storage for image uploads
 - **UI**: Tailwind CSS + shadcn/ui components
 - **Charts**: Chart.js with react-chartjs-2
 - **Forms**: react-hook-form with Zod validation
@@ -71,12 +73,13 @@ lib/
 
 ## 🎯 Key Features
 
-### Yield Tracking System
-- Real-time yield updates with +/- buttons
-- Interactive Chart.js visualizations
+### Durian Yield Tracking System
+- Real-time yield updates with +/- buttons for durian count
+- Interactive Chart.js visualizations showing kg production
 - Time-period analysis (7d, 30d, 90d, 1yr, all)
 - Smart yield change parsing from log notes
 - Statistical analytics with trend tracking
+- Variety-specific weight calculations (หมอนทอง: 2.5kg, ชะนี: 3.0kg, etc.)
 
 ### Repository Pattern
 - Type-safe database operations with Prisma
@@ -116,9 +119,10 @@ Key entities:
 ## 🌱 Seeding Data
 
 The database includes test data:
-- 30 trees across 3 sections
-- Sample yield tracking logs
-- Reference data (varieties, fertilizers, etc.)
+- 30 durian trees across 3 sections
+- Durian varieties: หมอนทอง, ชะนี, กันยาว, กระดุม, ไผ่ทอง
+- Sample yield tracking logs with durian weight calculations
+- Reference data (fertilizers, pesticides, activities)
 - Cost tracking examples
 
 Reset database: `npm run prisma:reset && npm run db:seed`

@@ -1,0 +1,253 @@
+
+> farmer@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.3.1
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.192:3000
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 1271ms
+ ○ Compiling /api/storage/init ...
+ ✓ Compiled /api/storage/init in 1143ms (458 modules)
+(node:76408) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Failed to create bucket: [Error [StorageApiError]: new row violates row-level security policy] {
+  __isStorageError: true,
+  status: 400
+}
+ POST /api/storage/init 500 in 2131ms
+ ○ Compiling /logs/add-single ...
+ ✓ Compiled /logs/add-single in 1637ms (1043 modules)
+ GET /logs/add-single 200 in 1826ms
+ ✓ Compiled in 360ms (405 modules)
+ ✓ Compiled in 296ms (405 modules)
+ ✓ Compiled in 155ms (405 modules)
+ ✓ Compiled in 125ms (405 modules)
+ ✓ Compiled in 170ms (405 modules)
+ ✓ Compiled in 251ms (405 modules)
+ ✓ Compiled in 115ms (405 modules)
+ ✓ Compiled in 174ms (405 modules)
+ ✓ Compiled in 157ms (405 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 646ms (875 modules)
+ GET / 200 in 837ms
+ ✓ Compiled /_not-found in 213ms (865 modules)
+ GET /_next/static/css/app/layout.css?v=1750434734150 404 in 286ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 274ms
+ GET /_next/static/chunks/main-app.js?v=1750434734150 404 in 275ms
+ ✓ Compiled in 399ms (416 modules)
+ ✓ Compiled in 413ms (416 modules)
+ ✓ Compiled in 154ms (416 modules)
+ ✓ Compiled in 230ms (416 modules)
+ ✓ Compiled in 251ms (416 modules)
+ ✓ Compiled in 144ms (416 modules)
+ ✓ Compiled in 141ms (416 modules)
+ ✓ Compiled in 254ms (416 modules)
+ ○ Compiling /api/storage/status ...
+ ✓ Compiled /api/storage/status in 737ms (581 modules)
+ GET /api/storage/status 200 in 1410ms
+ ✓ Compiled /api/storage/init in 127ms (181 modules)
+Bucket 'tree-images' not found. Attempting to create...
+Failed to create bucket: [Error [StorageApiError]: new row violates row-level security policy] {
+  __isStorageError: true,
+  status: 400
+}
+
+🔧 MANUAL SETUP REQUIRED:
+Please create the storage bucket manually in your Supabase dashboard:
+
+1. Go to your Supabase project dashboard
+2. Navigate to Storage > Buckets
+3. Click "Create bucket"
+4. Name: tree-images
+5. Set as "Public bucket" = true
+6. Click "Create bucket"
+
+After creating the bucket, image uploads will work correctly.
+        
+ POST /api/storage/init 500 in 1028ms
+ ✓ Compiled in 295ms (416 modules)
+ ✓ Compiled in 515ms (416 modules)
+ ✓ Compiled in 298ms (416 modules)
+ ⨯ Error: Cannot find module './7719.js'
+Require stack:
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/server/webpack-runtime.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/server/app/api/storage/init/route.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/require.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/load-components.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/utils.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/swc/options.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/swc/index.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/config.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/next.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/lib/start-server.js
+    at __webpack_require__.f.require (.next/server/webpack-runtime.js:186:28)
+    at <unknown> (.next/server/webpack-runtime.js:113:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (.next/server/webpack-runtime.js:112:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (.next/server/webpack-runtime.js:150:22)
+    at <unknown> (.next/server/app/api/storage/status/route.js:13:1027)
+    at Object.<anonymous> (.next/server/app/api/storage/status/route.js:13:1079) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/api/storage/status'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 974ms (916 modules)
+ ⨯ Error: Cannot find module './chunks/vendor-chunks/next.js'
+Require stack:
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/server/webpack-runtime.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/server/pages/_document.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/require.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/load-components.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/utils.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/swc/options.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/swc/index.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/config.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/next.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/lib/start-server.js
+    at t.f.require (.next/server/webpack-runtime.js:1:1430)
+    at <unknown> (.next/server/webpack-runtime.js:1:889)
+    at Array.reduce (<anonymous>)
+    at t.e (.next/server/webpack-runtime.js:1:868)
+    at Array.map (<anonymous>)
+    at t.X (.next/server/webpack-runtime.js:1:1189)
+    at <unknown> (.next/server/pages/_document.js:63:47)
+    at Object.<anonymous> (.next/server/pages/_document.js:66:3) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /api/storage/status 500 in 1872ms
+ ✓ Compiled /favicon.ico in 492ms (1209 modules)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /apple-touch-icon.png 404 in 703ms
+ GET /apple-touch-icon-precomposed.png 404 in 706ms
+ GET /favicon.ico 200 in 730ms
+ GET /_next/static/webpack/9f61005444f2d7a3.webpack.hot-update.json 404 in 515ms
+ GET /api/storage/status 200 in 622ms
+ GET /api/storage/status 200 in 464ms
+ ✓ Compiled / in 482ms (660 modules)
+ GET / 200 in 671ms
+ GET /_next/static/css/app/layout.css?v=1750435306512 404 in 29ms
+ GET /_next/static/chunks/app/page.js 404 in 42ms
+ GET /_next/static/chunks/main-app.js?v=1750435306512 404 in 52ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 45ms
+ ✓ Compiled /bypass in 406ms (1171 modules)
+ GET /bypass 200 in 567ms
+ ✓ Compiled / in 70ms (551 modules)
+ GET / 200 in 236ms
+ ○ Compiling /logs/add-batch ...
+ ✓ Compiled /logs/add-batch in 685ms (1301 modules)
+ GET /logs/add-batch 200 in 940ms
+ ✓ Compiled /api/storage/status in 378ms (743 modules)
+ GET /api/storage/status 200 in 754ms
+ ✓ Compiled in 731ms (1315 modules)
+ ✓ Compiled in 260ms (671 modules)
+ ✓ Compiled in 150ms (671 modules)
+ ✓ Compiled in 134ms (671 modules)
+ ✓ Compiled in 178ms (671 modules)
+ ✓ Compiled in 142ms (671 modules)
+ ✓ Compiled in 131ms (671 modules)
+ ✓ Compiled in 146ms (671 modules)
+ ✓ Compiled in 120ms (671 modules)
+ ✓ Compiled /api/storage/status in 327ms (743 modules)
+ GET /api/storage/status 200 in 1005ms
+ ✓ Compiled in 1176ms (1400 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/cache/webpack/server-development/20.pack.gz_' -> '/Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/cache/webpack/server-development/20.pack.gz'
+ ✓ Compiled /api/storage/buckets in 444ms (1399 modules)
+ GET /api/storage/buckets 200 in 1227ms
+ ✓ Compiled /api/storage/status in 164ms (745 modules)
+ GET /api/storage/status 200 in 505ms
+ GET /api/storage/status 200 in 122ms
+ GET /api/storage/status 200 in 214ms
+ ✓ Compiled in 1131ms (1301 modules)
+ ✓ Compiled in 574ms (1301 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/cache/webpack/client-development/3.pack.gz_' -> '/Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/cache/webpack/client-development/3.pack.gz'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/cache/webpack/server-development/1.pack.gz_' -> '/Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/cache/webpack/server-development/1.pack.gz'
+ ✓ Compiled /api/storage/create-bucket in 306ms (1399 modules)
+🔧 Attempting to create bucket: tree-media
+📦 Creating bucket: tree-media
+Standard bucket creation failed: [Error [StorageApiError]: new row violates row-level security policy] {
+  __isStorageError: true,
+  status: 400
+}
+🔄 Trying minimal bucket creation...
+Minimal bucket creation also failed: [Error [StorageApiError]: new row violates row-level security policy] {
+  __isStorageError: true,
+  status: 400
+}
+ POST /api/storage/create-bucket 500 in 1372ms
+ ✓ Compiled in 910ms (1399 modules)
+ ✓ Compiled /storage-setup in 310ms (1308 modules)
+ GET /storage-setup 200 in 463ms
+ ✓ Compiled /api/storage/status in 383ms (743 modules)
+ GET /api/storage/status 200 in 1033ms
+ GET /api/storage/status 200 in 147ms
+ GET /api/storage/status 200 in 432ms
+ ○ Compiling /api/storage/buckets ...
+ ✓ Compiled /api/storage/buckets in 512ms (742 modules)
+ GET /api/storage/buckets 200 in 1701ms
+ ✓ Compiled /api/storage/status in 164ms (745 modules)
+ GET /api/storage/status 200 in 434ms
+ ○ Compiling /storage-setup ...
+ ✓ Compiled /storage-setup in 795ms (649 modules)
+ GET /storage-setup 200 in 1140ms
+ ✓ Compiled /api/storage/status in 168ms (747 modules)
+ ✓ Compiled (750 modules)
+ GET /api/storage/status 200 in 1310ms
+ GET /api/storage/buckets 200 in 1392ms
+ GET /api/storage/status 200 in 93ms
+ GET /api/storage/buckets 200 in 186ms
+ GET /api/storage/status 200 in 123ms
+ GET /api/storage/buckets 200 in 142ms
+ GET /storage-setup 200 in 137ms
+ GET /api/storage/status 200 in 207ms
+ GET /api/storage/buckets 200 in 264ms
+ GET /api/storage/status 200 in 106ms
+ GET /api/storage/buckets 200 in 101ms
+ GET /api/storage/buckets 200 in 462ms
+ GET /api/storage/status 200 in 493ms
+ GET /api/storage/buckets 200 in 168ms
+ GET /api/storage/status 200 in 172ms
+ ✓ Compiled /_not-found in 483ms (1312 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /_next/static/webpack/33f9c2c3169a02e0.webpack.hot-update.json 404 in 409ms
+ GET /storage-setup 404 in 730ms
+ GET /_next/static/webpack/33f9c2c3169a02e0.webpack.hot-update.json 404 in 410ms
+ GET /_next/static/css/app/layout.css?v=1750472170675 404 in 152ms
+ GET /storage-setup 200 in 191ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 171ms
+ GET /_next/static/chunks/main-app.js?v=1750472170675 404 in 173ms
+ GET /_next/static/chunks/app/layout.js 404 in 175ms
+ GET /_next/static/css/app/layout.css?v=1750472170793 404 in 24ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 39ms
+ GET /_next/static/chunks/app/layout.js 404 in 38ms
+ GET /_next/static/chunks/main-app.js?v=1750472170793 404 in 40ms
+ GET /_next/static/chunks/app/storage-setup/page.js 404 in 16ms
+ ✓ Compiled in 506ms (673 modules)
+ ✓ Compiled in 132ms (673 modules)
+ ✓ Compiled /api/storage/status in 302ms (748 modules)
+ GET /api/storage/status 200 in 1121ms
+ ✓ Compiled in 750ms (1407 modules)
+ ✓ Compiled /api/storage/test-upload in 377ms (1409 modules)
+🧪 Testing upload to bucket: tree-media
+✅ Test upload successful: {
+  path: 'test/upload-test-1750472736634.txt',
+  id: '0bc75c3c-ccd8-4333-b419-f0624bd14e4a',
+  fullPath: 'tree-media/test/upload-test-1750472736634.txt'
+}
+ POST /api/storage/test-upload 200 in 955ms
+ ✓ Compiled in 209ms (1423 modules)
+ ✓ Compiled in 340ms (1423 modules)
+ ✓ Compiled in 409ms (1420 modules)
+ ✓ Compiled /api/storage/status in 192ms (748 modules)
+ GET /api/storage/status 200 in 801ms
+ ✓ Compiled in 1245ms (673 modules)
+ ✓ Compiled in 428ms (673 modules)
+ ✓ Compiled in 492ms (1322 modules)

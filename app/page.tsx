@@ -19,6 +19,7 @@ interface DashboardStats {
   varietyDistribution: { variety: string; count: number }[]
   activityDistribution: { activityType: string; count: number }[]
   monthlyTrend: { month: string; amount: number }[]
+  lastUpdateTime: string
 }
 
 export default function HomePage() {
@@ -34,7 +35,8 @@ export default function HomePage() {
     monthlyRevenue: 0,
     varietyDistribution: [],
     activityDistribution: [],
-    monthlyTrend: []
+    monthlyTrend: [],
+    lastUpdateTime: '-'
   })
   const [loading, setLoading] = useState(true)
   const [greeting, setGreeting] = useState('สวัสดี')
@@ -93,10 +95,15 @@ export default function HomePage() {
       // Calculate realistic monthly yield based on actual fruit count data
       const monthlyYield = yieldData.reduce((total, tree) => {
         const fruitCount = tree.fruitCount || 0
-        // Estimate kg per fruit based on variety (durian average 2-3 kg per fruit)
+        // Estimate kg per fruit based on durian variety (much heavier than mango)
         const weightPerFruit = getWeightPerFruit(tree.variety)
         return total + (fruitCount * weightPerFruit)
       }, 0)
+
+      // Get last update time from recent activity
+      const lastUpdateTime = results[4].status === 'fulfilled' && results[4].value.length > 0 && results[4].value[0].createdAt
+        ? new Date(results[4].value[0].createdAt).toLocaleString('th-TH')
+        : 'ไม่มีกิจกรรม'
 
       setStats({
         totalTrees,
@@ -109,7 +116,8 @@ export default function HomePage() {
         monthlyRevenue,
         varietyDistribution,
         activityDistribution,
-        monthlyTrend
+        monthlyTrend,
+        lastUpdateTime
       })
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
@@ -125,14 +133,15 @@ export default function HomePage() {
         monthlyRevenue: 0,
         varietyDistribution: [],
         activityDistribution: [],
-        monthlyTrend: []
+        monthlyTrend: [],
+        lastUpdateTime: 'ไม่สามารถโหลดข้อมูลได้'
       })
     } finally {
       setLoading(false)
     }
   }
 
-  // Helper function to estimate weight per fruit based on variety
+  // Helper function to estimate weight per fruit based on durian variety
   function getWeightPerFruit(variety: string | null): number {
     const varietyWeights: Record<string, number> = {
       'หมอนทอง': 2.5,
@@ -141,7 +150,7 @@ export default function HomePage() {
       'กระดุม': 1.5,
       'ไผ่ทอง': 2.2
     }
-    return varietyWeights[variety || ''] || 2.5 // Default 2.5 kg per fruit
+    return varietyWeights[variety || ''] || 2.5 // Default 2.5 kg per durian
   }
 
   const formatNumber = (num: number) => {
@@ -218,7 +227,7 @@ export default function HomePage() {
               <p className="text-[#121a0f] tracking-tight text-4xl font-bold leading-tight">
                 {loading ? '...' : formatNumber(stats.monthlyYield)} กก.
               </p>
-              <p className="text-[#3a5734] text-sm font-normal">อัปเดตเมื่อ 2 ชั่วโมงที่แล้ว</p>
+              <p className="text-[#3a5734] text-sm font-normal">อัปเดตล่าสุด: {loading ? '...' : stats.lastUpdateTime}</p>
             </div>
             
             <div className="metric-card flex flex-col gap-2">
@@ -233,12 +242,12 @@ export default function HomePage() {
             </div>
             
             <div className="metric-card flex flex-col gap-2">
-              <p className="text-[#121a0f] text-lg font-semibold leading-normal">ผลประกอบการทางการเงิน</p>
+              <p className="text-[#121a0f] text-lg font-semibold leading-normal">ค่าใช้จ่ายรวม</p>
               <p className="text-[#121a0f] tracking-tight text-4xl font-bold leading-tight">
                 ฿{loading ? '...' : formatNumber(stats.monthlyRevenue)}
               </p>
-              <p className="text-[#078821] text-sm font-medium">
-                + ฿{loading ? '...' : formatNumber(Math.round(stats.monthlyRevenue * 0.1))} เทียบเดือนที่แล้ว
+              <p className="text-[#3a5734] text-sm font-normal">
+                ค่าใช้จ่ายการเกษตร
               </p>
             </div>
           </div>
@@ -252,13 +261,7 @@ export default function HomePage() {
                 {loading ? '...' : stats.totalTrees} ต้น <span className="text-base font-medium text-[#3a5734]">(ทั้งหมด)</span>
               </p>
               <div className="flex gap-2 items-center">
-                <p className="text-[#3a5734] text-sm font-normal leading-normal">เปรียบเทียบปีที่แล้ว</p>
-                <span className="text-[#078821] text-sm font-semibold flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path clipRule="evenodd" d="M10 17a.75.75 0 0 1-.75-.75V5.56l-2.47 2.47a.75.75 0 0 1-1.06-1.06l3.75-3.75a.75.75 0 0 1 1.06 0l3.75 3.75a.75.75 0 1 1-1.06 1.06L10.75 5.56v10.69A.75.75 0 0 1 10 17Z" fillRule="evenodd"></path>
-                  </svg>
-                  +15%
-                </span>
+                <p className="text-[#3a5734] text-sm font-normal leading-normal">พันธุ์ทั้งหมด {loading ? '...' : stats.totalVarieties} ชนิด</p>
               </div>
               <div className="grid min-h-[200px] grid-flow-col gap-4 grid-rows-[1fr_auto] items-end justify-items-center px-3 pt-4">
                 {stats.varietyDistribution.slice(0, 3).map((variety, index) => {
@@ -272,7 +275,7 @@ export default function HomePage() {
                         title={`${variety.variety}: ${variety.count} ต้น`}
                       ></div>
                       <p className="text-[#3a5734] text-xs font-semibold leading-normal tracking-[0.015em]">
-                        {variety.variety}
+                        {variety.variety.length > 12 ? variety.variety.substring(0, 12) + '...' : variety.variety}
                       </p>
                     </React.Fragment>
                   )
@@ -293,13 +296,7 @@ export default function HomePage() {
                 {loading ? '...' : stats.totalLogs} <span className="text-base font-medium text-[#3a5734]">(รายการ)</span>
               </p>
               <div className="flex gap-2 items-center">
-                <p className="text-[#3a5734] text-sm font-normal leading-normal">เปรียบเทียบเดือนที่แล้ว</p>
-                <span className="text-[#078821] text-sm font-semibold flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path clipRule="evenodd" d="M10 17a.75.75 0 0 1-.75-.75V5.56l-2.47 2.47a.75.75 0 0 1-1.06-1.06l3.75-3.75a.75.75 0 0 1 1.06 0l3.75 3.75a.75.75 0 1 1-1.06 1.06L10.75 5.56v10.69A.75.75 0 0 1 10 17Z" fillRule="evenodd"></path>
-                  </svg>
-                  +8%
-                </span>
+                <p className="text-[#3a5734] text-sm font-normal leading-normal">กิจกรรมล่าสุด: {loading ? '...' : stats.recentActivity}</p>
               </div>
               <div className="grid min-h-[200px] grid-flow-col gap-4 grid-rows-[1fr_auto] items-end justify-items-center px-3 pt-4">
                 {stats.activityDistribution.slice(0, 3).map((activity, index) => {
@@ -327,20 +324,14 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Revenue Trend */}
+            {/* Cost Trend */}
             <div className="chart-card lg:col-span-1 flex flex-col gap-3">
-              <p className="text-[#121a0f] text-lg font-semibold leading-normal">แนวโน้มรายได้รายเดือน</p>
+              <p className="text-[#121a0f] text-lg font-semibold leading-normal">แนวโน้มค่าใช้จ่ายรายเดือน</p>
               <p className="text-[#121a0f] tracking-tight text-3xl font-bold leading-tight truncate">
-                ฿{loading ? '...' : formatNumber(Math.round(stats.monthlyRevenue / 12))} <span className="text-base font-medium text-[#3a5734]">(ปัจจุบัน)</span>
+                ฿{loading ? '...' : formatNumber(Math.round(stats.monthlyRevenue / 12))} <span className="text-base font-medium text-[#3a5734]">(เฉลี่ย)</span>
               </p>
               <div className="flex gap-2 items-center">
-                <p className="text-[#3a5734] text-sm font-normal leading-normal">รวมปีนี้</p>
-                <span className="text-[#078821] text-sm font-semibold flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path clipRule="evenodd" d="M10 17a.75.75 0 0 1-.75-.75V5.56l-2.47 2.47a.75.75 0 0 1-1.06-1.06l3.75-3.75a.75.75 0 0 1 1.06 0l3.75 3.75a.75.75 0 1 1-1.06 1.06L10.75 5.56v10.69A.75.75 0 0 1 10 17Z" fillRule="evenodd"></path>
-                  </svg>
-                  +22%
-                </span>
+                <p className="text-[#3a5734] text-sm font-normal leading-normal">ค่าใช้จ่ายรวม {loading ? '...' : stats.totalCosts} รายการ</p>
               </div>
               <div className="flex min-h-[200px] flex-1 flex-col gap-4 py-4">
                 <svg fill="none" height="148" preserveAspectRatio="none" viewBox="-3 0 478 150" width="100%">

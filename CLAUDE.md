@@ -19,7 +19,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Next.js 15 application for managing tree/farm data called "สวนวิสุทธิ์ศิริ" (Visutthisiri Garden). The app uses:
 
-- **Database**: PostgreSQL for data storage
+- **Database**: Supabase PostgreSQL for data storage
+- **Storage**: Supabase Storage for image uploads
 - **ORM**: Prisma with type-safe repository pattern
 - **UI**: Tailwind CSS for styling with shadcn/ui components
 - **Charts**: Chart.js with react-chartjs-2 for data visualization
@@ -61,8 +62,10 @@ The application manages several types of data:
 
 ### Configuration
 
-- Database configured via environment variables:
-  - `DATABASE_URL` - PostgreSQL connection string
+- Supabase configuration via environment variables:
+  - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+  - `NEXT_PUBLIC_SUPABASE_KEY` - Supabase anonymous key
+  - `DATABASE_URL` - Supabase PostgreSQL connection string
   - `DIRECT_URL` - Direct database connection for migrations
 - TypeScript path mapping: `@/*` maps to root directory
 
@@ -113,6 +116,29 @@ The application manages several types of data:
 - Individual CSV export per section
 - Bulk export all data functionality
 - Improved data type safety
+
+## Supabase Storage Integration (December 2024)
+
+**Complete Image Upload System:**
+- Full Supabase Storage integration for tree and harvest images
+- `SimpleImageUpload` and `ImageUpload` React components with validation
+- Storage utilities (`/lib/storage.ts`) with bucket verification and error handling
+- API endpoints for upload (`/api/upload`) and storage management
+- Integrated into tree logging and harvest forms
+
+**Setup Requirements:**
+- **Manual bucket creation required**: Due to RLS policies, create `tree-images` bucket manually in Supabase dashboard
+- See `docs/SUPABASE-STORAGE-SETUP.md` for complete setup instructions
+- Storage status API at `/api/storage/status` for diagnostics
+- Automatic bucket verification prevents "bucket not found" errors
+
+**Features:**
+- 10MB file size limit with type validation (JPG, PNG, GIF)
+- Unique filename generation with timestamps
+- Public bucket access for direct image URLs
+- Organized folder structure (`logs/`, `harvest/`)
+- Comprehensive error handling and user feedback
+- Toast notifications for upload status
 
 ## Prisma ORM Implementation (December 2024)
 

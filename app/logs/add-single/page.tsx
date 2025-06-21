@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { SimpleImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/lib/supabase";
 import { toast } from "react-hot-toast";
 
@@ -46,8 +47,7 @@ export default function AddSingleLogPage() {
   const [treeId, setTreeId] = useState("");
   const [notes, setNotes] = useState("");
   const [logDate, setLogDate] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [activityType, setActivityType] = useState("");
   const [healthStatus, setHealthStatus] = useState("");
   const [fertilizerType, setFertilizerType] = useState("");
@@ -119,29 +119,15 @@ export default function AddSingleLogPage() {
     }
 
     setSubmitting(true);
-    let imagePath = null;
 
     try {
-      // Upload image if provided
-      if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
-        const fileName = `${treeId}_${Date.now()}.${fileExt}`;
-        const { data, error: uploadError } = await supabase.storage
-          .from("tree-media")
-          .upload(fileName, imageFile);
-        
-        if (uploadError) {
-          throw new Error("อัปโหลดรูปภาพล้มเหลว");
-        }
-        imagePath = data?.path || null;
-      }
 
       // Insert log record
       const { error } = await supabase.from("tree_logs").insert({
         tree_id: treeId,
         log_date: logDate,
         notes: notes.trim() || null,
-        image_path: imagePath,
+        image_path: imageUrl || null,
         activity_type: activityType || null,
         health_status: healthStatus || null,
         fertilizer_type: fertilizerType || null,
@@ -167,40 +153,15 @@ export default function AddSingleLogPage() {
     setTreeSearch("");
     setNotes("");
     setLogDate(new Date().toISOString().split("T")[0]);
-    setImageFile(null);
-    setPreviewUrl("");
+    setImageUrl("");
     setActivityType("");
     setHealthStatus("");
     setFertilizerType("");
     setShowTreeDropdown(false);
   }
 
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("ไฟล์รูปภาพต้องมีขนาดไม่เกิน 5MB");
-        return;
-      }
-
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
-        return;
-      }
-
-      setImageFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  }
-
-  function removeImage() {
-    setImageFile(null);
-    setPreviewUrl("");
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
+  function handleImageUploaded(url: string) {
+    setImageUrl(url);
   }
 
   function selectTree(tree: Tree) {
@@ -450,40 +411,11 @@ export default function AddSingleLogPage() {
                 <CardTitle>📷 รูปภาพ</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      อัปโหลดรูปภาพต้นไม้
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 transition-colors"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      รองรับไฟล์ JPG, PNG, GIF ขนาดไม่เกิน 5MB
-                    </p>
-                  </div>
-                  
-                  {previewUrl && (
-                    <div className="relative">
-                      <img
-                        src={previewUrl}
-                        alt="Preview"
-                        className="w-full max-h-80 object-cover rounded-lg shadow-md"
-                      />
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={removeImage}
-                        className="absolute top-2 right-2"
-                      >
-                        ✕ ลบรูป
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                <SimpleImageUpload
+                  onImageUploaded={handleImageUploaded}
+                  currentImageUrl={imageUrl}
+                  disabled={submitting}
+                />
               </CardContent>
             </Card>
           </div>
@@ -523,7 +455,7 @@ export default function AddSingleLogPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">รูปภาพ:</span>
-                    <span className="font-medium">{imageFile ? '✅ มี' : '❌ ไม่มี'}</span>
+                    <span className="font-medium">{imageUrl ? '✅ มี' : '❌ ไม่มี'}</span>
                   </div>
                 </div>
               </CardContent>

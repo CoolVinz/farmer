@@ -26,11 +26,11 @@ async function main() {
   
   const varieties = await prisma.variety.createMany({
     data: [
-      { name: 'มะม่วงน้ำดอกไม้' },
-      { name: 'มะม่วงเขียวเสวย' },
-      { name: 'มะม่วงแก้วตายตัว' },
-      { name: 'มะม่วงพิมเสน' },
-      { name: 'มะม่วงโชคอนันต์' },
+      { name: 'หมอนทอง' },
+      { name: 'ชะนี' },
+      { name: 'กันยาว' },
+      { name: 'กระดุม' },
+      { name: 'ไผ่ทอง' },
     ],
   });
 
@@ -133,7 +133,7 @@ async function main() {
       data: {
         location_id: `A${i.toString().padStart(2, '0')}`,
         treeCode: `A${i.toString().padStart(2, '0')}`,
-        variety: i % 2 === 0 ? 'มะม่วงน้ำดอกไม้' : 'มะม่วงเขียวเสวย',
+        variety: i % 2 === 0 ? 'หมอนทอง' : 'ชะนี',
         plantedDate: new Date(2022, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
         status: 'alive',
         treeNumber: i,
@@ -151,7 +151,7 @@ async function main() {
       data: {
         location_id: `B${i.toString().padStart(2, '0')}`,
         treeCode: `B${i.toString().padStart(2, '0')}`,
-        variety: i % 3 === 0 ? 'มะม่วงแก้วตายตัว' : 'มะม่วงพิมเสน',
+        variety: i % 3 === 0 ? 'กันยาว' : 'กระดุม',
         plantedDate: new Date(2022, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
         status: 'alive',
         treeNumber: i,
@@ -169,7 +169,7 @@ async function main() {
       data: {
         location_id: `C${i.toString().padStart(2, '0')}`,
         treeCode: `C${i.toString().padStart(2, '0')}`,
-        variety: 'มะม่วงโชคอนันต์',
+        variety: 'ไผ่ทอง',
         plantedDate: new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
         status: Math.random() > 0.9 ? 'sick' : 'alive',
         treeNumber: i,

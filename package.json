@@ -12,6 +12,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:reset": "prisma migrate reset",
     "db:seed": "tsx lib/seed-dev.ts",
+    "db:seed-original": "tsx scripts/seed-original-farm.ts",
+    "db:verify": "tsx scripts/verify-farm-data.ts",
     "pre-push": "bash scripts/pre-push-check.sh"
   },
   "dependencies": {
