@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY!
+// Legacy Supabase client - kept for backward compatibility but no longer used
+// since we've migrated to self-hosted infrastructure
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || 'placeholder-key'
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 

@@ -327,3 +327,55 @@ Bucket check failed: NotFound: UnknownError
   url: 'https://minio.aivinz.xyz/tree-media/test/1750481500330-sd24ch8pdj.txt'
 }
  POST /api/storage/test-upload 200 in 1879ms
+ ✓ Compiled /bypass in 477ms (654 modules)
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+    at JSON.parse (<anonymous>) {
+  digest: '308505557'
+}
+TypeError: Cannot read properties of undefined (reading 'call')
+    at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+    at JSON.parse (<anonymous>)
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at Object.__webpack_require__ [as require] (.next/server/webpack-runtime.js:33:43)
+    at JSON.parse (<anonymous>) {
+  page: '/bypass'
+}
+ ⨯ Error: Cannot find module './8548.js'
+Require stack:
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/server/webpack-runtime.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/server/app/bypass/page.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/require.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/load-components.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/utils.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/swc/options.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/swc/index.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/build/next-config-ts/transpile-config.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/config.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/next.js
+- /Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/node_modules/next/dist/server/lib/start-server.js
+    at __webpack_require__.f.require (.next/server/webpack-runtime.js:198:28)
+    at <unknown> (.next/server/webpack-runtime.js:111:40)
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (.next/server/webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (.next/server/webpack-runtime.js:162:22)
+    at <unknown> (.next/server/pages/_document.js:1:341)
+    at Object.<anonymous> (.next/server/pages/_document.js:1:384) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ GET /bypass 500 in 1247ms
+ ✓ Compiled / in 305ms (663 modules)
+ GET / 200 in 599ms
+ ✓ Compiled /_not-found in 431ms (2022 modules)
+ GET /_next/static/css/app/layout.css?v=1750483023939 404 in 518ms
+ GET /_next/static/chunks/app/layout.js 404 in 499ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 486ms
+ GET /_next/static/chunks/app/page.js 404 in 436ms
+ ✓ Compiled in 1108ms (1369 modules)
+ ✓ Compiled in 537ms (1369 modules)
+ ✓ Compiled in 415ms (1369 modules)
+ ✓ Compiled in 1856ms (2018 modules)
+ ✓ Compiled in 1054ms (2018 modules)
+ ✓ Compiled in 1028ms (2018 modules)

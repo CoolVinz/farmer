@@ -1,22 +1,24 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getStorageStatus } from '@/lib/storage'
 
 export async function GET() {
   try {
-    const { data: buckets, error } = await supabase.storage.listBuckets()
+    // Get MinIO storage status
+    const status = await getStorageStatus()
     
-    if (error) {
-      return NextResponse.json({
-        success: false,
-        error: error.message,
-        buckets: []
-      })
-    }
+    // Return bucket information in Supabase-compatible format
+    const buckets = status.bucketExists ? [{
+      id: status.bucketName,
+      name: status.bucketName,
+      public: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }] : []
     
     return NextResponse.json({
       success: true,
-      buckets: buckets || [],
-      totalBuckets: buckets?.length || 0
+      buckets,
+      totalBuckets: buckets.length
     })
   } catch (error) {
     console.error('Bucket listing error:', error)
