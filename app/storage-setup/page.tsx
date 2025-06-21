@@ -83,7 +83,7 @@ export default function StorageSetupPage() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span>Bucket <code>tree-media</code>:</span>
-                  <Badge variant={status?.bucketExists ? "success" : "destructive"}>
+                  <Badge variant={status?.bucketExists ? "default" : "destructive"}>
                     {status?.bucketExists ? '✅ Exists' : '❌ Not Found'}
                   </Badge>
                 </div>
@@ -98,7 +98,7 @@ export default function StorageSetupPage() {
                       {status.buckets.map((bucket, index) => (
                         <div key={index} className="flex justify-between items-center text-sm">
                           <code>{bucket.name}</code>
-                          <Badge variant={bucket.public ? "success" : "secondary"} size="sm">
+                          <Badge variant={bucket.public ? "default" : "secondary"}>
                             {bucket.public ? 'Public' : 'Private'}
                           </Badge>
                         </div>
@@ -145,7 +145,7 @@ export default function StorageSetupPage() {
                   <div className="flex gap-3">
                     <span className="font-mono bg-orange-100 px-2 py-1 rounded text-orange-800">2</span>
                     <div>
-                      <p className="font-medium">Click "Create bucket" or "New bucket"</p>
+                      <p className="font-medium">Click &quot;Create bucket&quot; or &quot;New bucket&quot;</p>
                     </div>
                   </div>
                   
@@ -165,14 +165,14 @@ export default function StorageSetupPage() {
                   <div className="flex gap-3">
                     <span className="font-mono bg-orange-100 px-2 py-1 rounded text-orange-800">4</span>
                     <div>
-                      <p className="font-medium">Click "Create bucket"</p>
+                      <p className="font-medium">Click &quot;Create bucket&quot;</p>
                     </div>
                   </div>
                   
                   <div className="flex gap-3">
                     <span className="font-mono bg-orange-100 px-2 py-1 rounded text-orange-800">5</span>
                     <div>
-                      <p className="font-medium">Come back here and click "🔄 Refresh" to verify</p>
+                      <p className="font-medium">Come back here and click &quot;🔄 Refresh&quot; to verify</p>
                     </div>
                   </div>
                 </div>
@@ -231,11 +231,11 @@ export default function StorageSetupPage() {
             <div>
               <h3 className="font-semibold mb-2">Method 2: SQL Editor</h3>
               <p className="text-sm text-gray-600 mb-2">
-                If the dashboard method doesn't work, try the SQL Editor:
+                If the dashboard method doesn&apos;t work, try the SQL Editor:
               </p>
               <div className="bg-gray-100 p-3 rounded text-sm font-mono">
                 INSERT INTO storage.buckets (id, name, public, file_size_limit)<br/>
-                VALUES ('tree-media', 'tree-media', true, 10485760);
+                VALUES (&apos;tree-media&apos;, &apos;tree-media&apos;, true, 10485760);
               </div>
               <Button asChild variant="outline" size="sm" className="mt-2">
                 <a href={`${dashboardUrl}/sql`} target="_blank" rel="noopener noreferrer">
