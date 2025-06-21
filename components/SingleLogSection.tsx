@@ -22,7 +22,8 @@ interface SingleLogSectionProps {
   onPageChange: (newPage: number) => void;
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "");
+const MINIO_ENDPOINT = process.env.NEXT_PUBLIC_MINIO_ENDPOINT || process.env.MINIO_ENDPOINT;
+const MINIO_BUCKET = process.env.NEXT_PUBLIC_MINIO_BUCKET || process.env.MINIO_BUCKET || 'tree-media';
 
 export default function SingleLogSection({
   logs,
@@ -42,7 +43,7 @@ export default function SingleLogSection({
               // log.image_path is just the filename, so prepend your bucket name:
               const filename = log.image_path?.replace(/^\/+/, "") || "";
               const src = filename
-                ? `${SUPABASE_URL}/storage/v1/object/public/tree-media/${filename}`
+                ? `${MINIO_ENDPOINT}/${MINIO_BUCKET}/${filename}`
                 : "";
 
               return (

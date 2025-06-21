@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ImageLog } from '@/hooks/useGalleryImages';
-import { getImageUrl } from '@/utils/imageUtils';
+import { getImageUrl } from '@/lib/utils/imageUtils';
 
 interface ImagePreviewModalProps {
   previewLog: ImageLog | null;
@@ -63,11 +63,20 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = React.memo(({
           ✕
         </Button>
         
-        <img
-          src={getImageUrl(previewLog.image_path)}
-          className="max-w-full max-h-[70vh] rounded-lg shadow-2xl"
-          alt={previewLog.notes || "Tree image"}
-        />
+        {previewLog.image_path ? (
+          <img
+            src={getImageUrl(previewLog.image_path)}
+            className="max-w-full max-h-[70vh] rounded-lg shadow-2xl"
+            alt={previewLog.notes || "Tree image"}
+            onError={(e) => {
+              console.error('Preview image failed to load:', getImageUrl(previewLog.image_path), e);
+            }}
+          />
+        ) : (
+          <div className="w-full h-[70vh] bg-gray-200 flex items-center justify-center rounded-lg shadow-2xl">
+            <div className="text-gray-400 text-6xl">🌳</div>
+          </div>
+        )}
         
         <Card className="mt-4 bg-white/95 backdrop-blur">
           <CardContent className="p-4">

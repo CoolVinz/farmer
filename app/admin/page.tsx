@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+// No repository imports needed - using API routes
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { downloadCSV } from "@/lib/csv-utils";
 interface DataItem {
   id: string
   name: string
-  created_at: string
+  createdAt?: Date | null
 }
 
 interface SectionProps {
@@ -139,49 +139,80 @@ export default function AdminPage() {
   }, []);
 
   async function fetchAll() {
-    const [v, f, p, d, a, ac] = await Promise.all([
-      supabase.from("varieties").select("*").order("name"),
-      supabase.from("fertilizers").select("*").order("name"),
-      supabase.from("pesticides").select("*").order("name"),
-      supabase.from("plant_diseases").select("*").order("name"),
-      supabase.from("activities").select("*").order("name"),
-      supabase.from("activities_cost").select("*").order("name"),
-    ]);
-    setVarieties(v.data || []);
-    setFertilizers(f.data || []);
-    setPesticides(p.data || []);
-    setDiseases(d.data || []);
-    setActivities(a.data || []);
-    setActivitiesCost(ac.data || []);
+    try {
+      const [v, f, p, d, a, ac] = await Promise.all([
+        fetch('/api/admin/varieties').then(res => res.json()),
+        fetch('/api/admin/fertilizers').then(res => res.json()),
+        fetch('/api/admin/pesticides').then(res => res.json()),
+        fetch('/api/admin/diseases').then(res => res.json()),
+        fetch('/api/admin/activities').then(res => res.json()),
+        fetch('/api/admin/activity-costs').then(res => res.json()),
+      ]);
+      setVarieties(v);
+      setFertilizers(f);
+      setPesticides(p);
+      setDiseases(d);
+      setActivities(a);
+      setActivitiesCost(ac);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+    }
   }
 
   async function addItem(type: string, value: string, reset: () => void) {
     if (!value) return;
 
-    // ตรวจสอบชื่อซ้ำก่อน insert
-    const existing = await supabase
-      .from(type)
-      .select("name")
-      .eq("name", value)
-      .maybeSingle();
-    if (existing.data) {
-      toast.error("🚫 รายการนี้มีอยู่แล้ว");
-      return;
-    }
+    try {
+      // Map table names to API endpoints
+      const apiMap: { [key: string]: string } = {
+        'varieties': '/api/admin/varieties',
+        'fertilizers': '/api/admin/fertilizers', 
+        'pesticides': '/api/admin/pesticides',
+        'plant_diseases': '/api/admin/diseases',
+        'activities': '/api/admin/activities',
+        'activities_cost': '/api/admin/activity-costs'
+      };
 
-    const { data, error } = await supabase
-      .from(type)
-      .insert({ name: value })
-      .select();
-    if (!error && data) {
+      const apiEndpoint = apiMap[type];
+      if (!apiEndpoint) {
+        toast.error("ประเภทข้อมูลไม่ถูกต้อง");
+        return;
+      }
+
+      // Create new item via API
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: value })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 409) {
+          toast.error("🚫 รายการนี้มีอยู่แล้ว");
+        } else {
+          toast.error(errorData.error || "เกิดข้อผิดพลาดในการเพิ่มรายการ");
+        }
+        return;
+      }
+
+      const newItem = await response.json();
+      
       reset();
-      if (type === "varieties") setVarieties((prev) => [...prev, ...data]);
-      if (type === "fertilizers") setFertilizers((prev) => [...prev, ...data]);
-      if (type === "pesticides") setPesticides((prev) => [...prev, ...data]);
-      if (type === "plant_diseases") setDiseases((prev) => [...prev, ...data]);
-      if (type === "activities") setActivities((prev) => [...prev, ...data]);
-      if (type === "activities_cost")
-        setActivitiesCost((prev) => [...prev, ...data]);
+      toast.success("เพิ่มรายการสำเร็จ! ✅");
+      
+      // Update state
+      if (type === "varieties") setVarieties((prev) => [...prev, newItem]);
+      if (type === "fertilizers") setFertilizers((prev) => [...prev, newItem]);
+      if (type === "pesticides") setPesticides((prev) => [...prev, newItem]);
+      if (type === "plant_diseases") setDiseases((prev) => [...prev, newItem]);
+      if (type === "activities") setActivities((prev) => [...prev, newItem]);
+      if (type === "activities_cost") setActivitiesCost((prev) => [...prev, newItem]);
+      
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast.error("เกิดข้อผิดพลาดในการเพิ่มรายการ");
     }
   }
 
@@ -196,10 +227,30 @@ export default function AdminPage() {
     }
 
     try {
-      const { error } = await supabase.from(type).delete().eq("id", id);
-      
-      if (error) {
-        toast.error(`เกิดข้อผิดพลาดในการลบ: ${error.message}`);
+      // Map table names to API endpoints
+      const apiMap: { [key: string]: string } = {
+        'varieties': '/api/admin/varieties',
+        'fertilizers': '/api/admin/fertilizers', 
+        'pesticides': '/api/admin/pesticides',
+        'plant_diseases': '/api/admin/diseases',
+        'activities': '/api/admin/activities',
+        'activities_cost': '/api/admin/activity-costs'
+      };
+
+      const apiEndpoint = apiMap[type];
+      if (!apiEndpoint) {
+        toast.error("ประเภทข้อมูลไม่ถูกต้อง");
+        return;
+      }
+
+      // Delete item via API
+      const response = await fetch(`${apiEndpoint}?id=${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.error || "เกิดข้อผิดพลาดในการลบข้อมูล");
         return;
       }
       

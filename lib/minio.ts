@@ -6,57 +6,139 @@ export type UploadResult = {
   error?: string
 }
 
-// MinIO Configuration
-const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT!
-const MINIO_ACCESS_KEY = process.env.MINIO_ACCESS_KEY!
-const MINIO_SECRET_KEY = process.env.MINIO_SECRET_KEY!
+// MinIO Configuration with validation
+const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT
+const MINIO_ACCESS_KEY = process.env.MINIO_ACCESS_KEY
+const MINIO_SECRET_KEY = process.env.MINIO_SECRET_KEY
 const BUCKET_NAME = process.env.MINIO_BUCKET || 'tree-media'
 
-// Create S3 client for MinIO
-const s3Client = new S3Client({
-  endpoint: MINIO_ENDPOINT,
-  region: 'us-east-1', // MinIO requires a region, but it's not used
-  credentials: {
-    accessKeyId: MINIO_ACCESS_KEY,
-    secretAccessKey: MINIO_SECRET_KEY,
-  },
-  forcePathStyle: true, // Required for MinIO
-})
+// Validate environment variables
+if (!MINIO_ENDPOINT) {
+  console.error('❌ MINIO_ENDPOINT environment variable is not set')
+}
+if (!MINIO_ACCESS_KEY) {
+  console.error('❌ MINIO_ACCESS_KEY environment variable is not set')
+}
+if (!MINIO_SECRET_KEY) {
+  console.error('❌ MINIO_SECRET_KEY environment variable is not set')
+}
+
+// Create S3 client for MinIO with better error handling
+function createS3Client(): S3Client | null {
+  if (!MINIO_ENDPOINT || !MINIO_ACCESS_KEY || !MINIO_SECRET_KEY) {
+    console.error('❌ MinIO configuration incomplete - missing environment variables:', {
+      endpoint: MINIO_ENDPOINT ? '✅ Set' : '❌ Missing',
+      accessKey: MINIO_ACCESS_KEY ? '✅ Set' : '❌ Missing',
+      secretKey: MINIO_SECRET_KEY ? '✅ Set' : '❌ Missing',
+    })
+    return null
+  }
+
+  try {
+    const client = new S3Client({
+      endpoint: MINIO_ENDPOINT,
+      region: 'us-east-1', // MinIO requires a region, but it's not used
+      credentials: {
+        accessKeyId: MINIO_ACCESS_KEY,
+        secretAccessKey: MINIO_SECRET_KEY,
+      },
+      forcePathStyle: true, // Required for MinIO
+      requestHandler: {
+        requestTimeout: 10000, // 10 second timeout
+        connectionTimeout: 5000 // 5 second connection timeout
+      }
+    })
+    console.log('✅ MinIO S3 client initialized successfully')
+    return client
+  } catch (error) {
+    console.error('❌ Failed to initialize MinIO S3 client:', error)
+    return null
+  }
+}
+
+let s3Client: S3Client | null = createS3Client()
 
 // Check if bucket exists
 export async function checkBucketExists(): Promise<boolean> {
+  if (!s3Client) {
+    console.error('❌ MinIO S3 client not initialized - cannot check bucket')
+    return false
+  }
+  
+  if (!BUCKET_NAME) {
+    console.error('❌ Bucket name not configured')
+    return false
+  }
+
   try {
+    console.log(`🔍 Checking if bucket '${BUCKET_NAME}' exists...`)
     await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }))
+    console.log(`✅ Bucket '${BUCKET_NAME}' exists and is accessible`)
     return true
-  } catch (error) {
-    console.error('Bucket check failed:', error)
+  } catch (error: any) {
+    console.error(`❌ Bucket check failed for '${BUCKET_NAME}':`, {
+      message: error.message,
+      name: error.name,
+      code: error.Code || error.code,
+      statusCode: error.$metadata?.httpStatusCode,
+      endpoint: MINIO_ENDPOINT,
+      requestId: error.$metadata?.requestId,
+      cfId: error.$metadata?.cfId,
+      // Additional debugging info
+      stack: error.stack?.split('\n')[0] // First line of stack trace
+    })
     return false
   }
 }
 
 // Create bucket if it doesn't exist
 export async function createBucket(): Promise<boolean> {
+  if (!s3Client) {
+    console.error('❌ MinIO S3 client not initialized - cannot create bucket')
+    return false
+  }
+
   try {
+    console.log(`📦 Creating bucket: ${BUCKET_NAME}`)
     await s3Client.send(new CreateBucketCommand({ Bucket: BUCKET_NAME }))
     console.log(`✅ Created bucket: ${BUCKET_NAME}`)
     return true
-  } catch (error) {
-    console.error('Bucket creation failed:', error)
+  } catch (error: any) {
+    console.error(`❌ Bucket creation failed for '${BUCKET_NAME}':`, {
+      message: error.message,
+      code: error.Code || error.code,
+      statusCode: error.$metadata?.httpStatusCode,
+      endpoint: MINIO_ENDPOINT
+    })
     return false
   }
 }
 
 // Upload image to MinIO
 export async function uploadImage(file: File, folder: string = 'logs'): Promise<UploadResult> {
+  if (!s3Client) {
+    // Try to reinitialize the client
+    s3Client = createS3Client()
+    if (!s3Client) {
+      return {
+        success: false,
+        error: 'MinIO not configured properly. Please check environment variables: MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY'
+      }
+    }
+  }
+
   try {
+    console.log(`📤 Starting upload for file: ${file.name} (${file.size} bytes)`)
+    
     // Ensure bucket exists
     const bucketExists = await checkBucketExists()
     if (!bucketExists) {
+      console.log(`📦 Bucket '${BUCKET_NAME}' doesn't exist, attempting to create...`)
       const created = await createBucket()
       if (!created) {
         return { 
           success: false, 
-          error: `Failed to create bucket '${BUCKET_NAME}'` 
+          error: `Unable to access or create bucket '${BUCKET_NAME}'. Please check MinIO server and credentials.` 
         }
       }
     }
@@ -78,7 +160,9 @@ export async function uploadImage(file: File, folder: string = 'logs'): Promise<
       ContentLength: file.size,
     })
 
+    console.log(`📤 Uploading to MinIO: ${fileName}`)
     await s3Client.send(command)
+    console.log(`✅ Upload successful: ${fileName}`)
 
     // Construct public URL
     const publicUrl = `${MINIO_ENDPOINT}/${BUCKET_NAME}/${fileName}`
@@ -87,8 +171,19 @@ export async function uploadImage(file: File, folder: string = 'logs'): Promise<
       success: true,
       url: publicUrl
     }
-  } catch (error) {
-    console.error('Upload failed:', error)
+  } catch (error: any) {
+    console.error('❌ Upload failed:', {
+      message: error.message,
+      name: error.name,
+      code: error.Code || error.code,
+      statusCode: error.$metadata?.httpStatusCode,
+      endpoint: MINIO_ENDPOINT,
+      bucketName: BUCKET_NAME,
+      fileName: fileName,
+      fileSize: file.size,
+      // Additional debugging info
+      stack: error.stack?.split('\n')[0] // First line of stack trace
+    })
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Upload failed'

@@ -7,9 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/lib/supabase";
 import { toast } from "react-hot-toast";
-import { plotRepository, sectionRepository } from "@/lib/repositories";
 
 interface Activity {
   id: string;
@@ -52,43 +50,31 @@ export default function AddBatchLogPage() {
 
   async function fetchAllData() {
     try {
-      // Fetch activities and fertilizers from Supabase
-      const [activitiesResult, fertilizersResult] = await Promise.allSettled([
-        supabase.from("activities").select("*").order("name"),
-        supabase.from("fertilizers").select("*").order("name")
+      // Fetch activities and fertilizers from API routes
+      const [activitiesResponse, fertilizersResponse] = await Promise.allSettled([
+        fetch('/api/admin/activities'),
+        fetch('/api/admin/fertilizers')
       ]);
 
-      if (activitiesResult.status === 'fulfilled' && activitiesResult.value.data) {
-        setActivities(activitiesResult.value.data);
+      if (activitiesResponse.status === 'fulfilled' && activitiesResponse.value.ok) {
+        const activitiesData = await activitiesResponse.value.json();
+        setActivities(activitiesData);
       }
-      if (fertilizersResult.status === 'fulfilled' && fertilizersResult.value.data) {
-        setFertilizers(fertilizersResult.value.data);
+      if (fertilizersResponse.status === 'fulfilled' && fertilizersResponse.value.ok) {
+        const fertilizersData = await fertilizersResponse.value.json();
+        setFertilizers(fertilizersData);
       }
 
-      // Fetch plots with section and tree counts using repository
+      // Fetch plots using API route
       try {
-        const plotsData = await plotRepository.findMany({ includeTreeCount: true });
-        
-        // Get section counts for each plot
-        const plotsWithCounts = await Promise.all(
-          plotsData.map(async (plot) => {
-            const sections = await sectionRepository.findByPlot(plot.id);
-            const treeCount = await plotRepository.getTreeCountForPlot(plot.id);
-            
-            return {
-              id: plot.id,
-              code: plot.code,
-              name: plot.name,
-              sectionCount: sections.length,
-              treeCount: treeCount
-            };
-          })
-        );
-        
-        setPlots(plotsWithCounts);
-      } catch (repoError) {
-        console.warn('Repository not available, using fallback data');
-        // Fallback to demo data if repository fails
+        const plotsResponse = await fetch('/api/plots');
+        if (plotsResponse.ok) {
+          const plotsData = await plotsResponse.json();
+          setPlots(plotsData);
+        }
+      } catch (plotError) {
+        console.warn('Plots API not available, using fallback data');
+        // Fallback to demo data if API fails
         setPlots([
           { id: '1', code: 'A', name: 'Garden Plot A', sectionCount: 61, treeCount: 98 },
           { id: '2', code: 'B', name: 'Garden Plot B', sectionCount: 0, treeCount: 0 },

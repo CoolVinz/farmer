@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { treeLogRepository } from "@/lib/repositories";
 import Link from "next/link";
 import Image from "next/image";
 import { Navigation } from "@/components/Navigation";

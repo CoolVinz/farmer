@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ImageLog } from '@/hooks/useGalleryImages';
-import { getImageUrl } from '@/utils/imageUtils';
+import { getImageUrl } from '@/lib/utils/imageUtils';
 
 interface ImageCardProps {
   log: ImageLog;
@@ -18,12 +18,21 @@ export const ImageCard: React.FC<ImageCardProps> = React.memo(({ log, onPreview 
       onClick={handleClick}
     >
       <div className="relative overflow-hidden">
-        <img
-          src={getImageUrl(log.image_path)}
-          alt={log.notes || "Tree image"}
-          className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-          loading="lazy"
-        />
+        {log.image_path ? (
+          <img
+            src={getImageUrl(log.image_path)}
+            alt={log.notes || "Tree image"}
+            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+            loading="lazy"
+            onError={(e) => {
+              console.error('Image failed to load:', getImageUrl(log.image_path), e);
+            }}
+          />
+        ) : (
+          <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+            <div className="text-gray-400 text-4xl">🌳</div>
+          </div>
+        )}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
           <div className="text-white text-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             🔍

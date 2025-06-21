@@ -6,7 +6,7 @@ export async function GET() {
     // Get MinIO storage status
     const status = await getStorageStatus()
     
-    // Return bucket information in Supabase-compatible format
+    // Return bucket information
     const buckets = status.bucketExists ? [{
       id: status.bucketName,
       name: status.bucketName,

@@ -14,8 +14,8 @@ import { ImageCard } from '@/components/gallery/ImageCard';
 import { ImagePreviewModal } from '@/components/gallery/ImagePreviewModal';
 import { PaginationControls } from '@/components/gallery/PaginationControls';
 import { EmptyState } from '@/components/gallery/EmptyState';
-import { calculatePagination } from '@/utils/imageUtils';
-import { calculateGalleryStats } from '@/utils/galleryStats';
+import { calculatePagination } from '@/lib/utils/imageUtils';
+import { calculateGalleryStats } from '@/lib/utils/galleryStats';
 
 const GalleryPage: React.FC = () => {
   const { logs, loading, error } = useGalleryImages();

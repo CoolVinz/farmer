@@ -2,9 +2,19 @@
 const nextConfig = {
   images: {
     domains: [
-      // replace with your Supabase project host, WITHOUT protocol
-      "sngxobxqxklzjyrvwqor.supabase.co",
+      // Add your MinIO server domain here, WITHOUT protocol
+      // Example: "minio.yourdomain.com"
     ],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
+      {
+        protocol: 'https', 
+        hostname: '**',
+      }
+    ]
   },
 };
 

@@ -1,17 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
 
 export interface ImageLog {
-  id: number;
+  id: string;
   tree_id: string;
   notes: string;
   image_path: string;
-  log_date: string;
+  log_date: Date;
   activity_type?: string;
   health_status?: string;
   trees?: {
     location_id: string;
-    tree_number: string;
+    tree_number: number;
     variety: string;
   } | null;
 }
@@ -26,30 +25,22 @@ export function useGalleryImages() {
       setLoading(true);
       setError(null);
       
-      const { data, error } = await supabase
-        .from("tree_logs")
-        .select(`
-          id, 
-          tree_id, 
-          notes, 
-          image_path, 
-          log_date, 
-          activity_type,
-          health_status,
-          trees(location_id, tree_number, variety)
-        `)
-        .not("image_path", "is", null)
-        .order("log_date", { ascending: false });
-
-      if (error) throw error;
-
-      if (data) {
-        const transformedData = data.map(item => ({
-          ...item,
-          trees: Array.isArray(item.trees) && item.trees.length > 0 ? item.trees[0] : null
-        }));
-        setLogs(transformedData as ImageLog[]);
+      const response = await fetch('/api/gallery/images');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch images');
       }
+      
+      const data = await response.json();
+      
+      // Convert date strings back to Date objects
+      const processedData = data.map((item: any) => ({
+        ...item,
+        log_date: new Date(item.log_date)
+      }));
+      
+      setLogs(processedData);
     } catch (error) {
       console.error("Error fetching images:", error);
       setError("เกิดข้อผิดพลาดในการโหลดรูปภาพ");

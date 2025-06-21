@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "../styles/farmly.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -117,5 +116,62 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Manrope', 'Noto Sans', system-ui, sans-serif;
   }
+}
+
+/* Farm Management System - Custom Styles */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap');
+
+:root {
+  /* Farm-specific color palette */
+  --farm-primary: #53d22c;
+  --farm-secondary: #38A169;
+  --farm-accent: #F9FBF9;
+  --farm-text-primary: #1A202C;
+  --farm-text-secondary: #4A5568;
+  --farm-border: #E2E8F0;
+  --farm-success: #48BB78;
+  --farm-warning: #ED8936;
+  --farm-error: #F56565;
+  --farm-info: #4299E1;
+
+  /* Dashboard colors */
+  --primary-color: #53d22c;
+  --primary-text-color: #121a0f;
+  --secondary-text-color: #3a5734; 
+  --background-color: #f9fbf9;
+  --card-background-color: #ffffff; 
+  --card-border-color: #e0e7de; 
+  --metric-card-background-color: #f0f7ef; 
+  --positive-change-color: #078821;
+  --negative-change-color: #e71f08;
+  --chart-bar-color: #a3cca3;
+  --chart-line-color: #53d22c;
+  --chart-fill-color: #e0f7da; 
+}
+
+/* Metric and Chart Cards */
+.metric-card {
+  background-color: var(--metric-card-background-color);
+  border-radius: 12px;
+  padding: 24px;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.chart-card {
+  background-color: var(--card-background-color);
+  border: 1px solid var(--card-border-color);
+  border-radius: 12px;
+  padding: 24px;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.chart-card:hover {
+  box-shadow: 0 8px 16px rgba(0,0,0,0.05);
 }

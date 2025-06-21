@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { uploadImage } from '@/lib/storage';
 import { toast } from 'react-hot-toast';
 
 interface ImageUploadProps {
@@ -38,10 +37,20 @@ export function ImageUpload({ onImageUploaded, folder = 'logs', disabled = false
     };
     reader.readAsDataURL(file);
 
-    // Upload to Supabase
+    // Upload to MinIO via API
     setUploading(true);
     try {
-      const result = await uploadImage(file, folder);
+      // Use API endpoint instead of direct storage call
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', folder);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
       
       if (result.success && result.url) {
         toast.success('อัปโหลดรูปภาพสำเร็จ');
@@ -155,7 +164,17 @@ export function SimpleImageUpload({ onImageUploaded, currentImageUrl, disabled =
 
     setUploading(true);
     try {
-      const result = await uploadImage(file, 'logs');
+      // Use API endpoint instead of direct storage call
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'logs');
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
       
       if (result.success && result.url) {
         toast.success('อัปโหลดรูปภาพสำเร็จ');

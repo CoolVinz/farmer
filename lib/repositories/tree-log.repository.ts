@@ -45,6 +45,19 @@ export class TreeLogRepository {
     })
   }
 
+  // Get all logs with images for gallery
+  async findManyWithImages() {
+    return prisma.treeLog.findMany({
+      where: {
+        imagePath: { not: null },
+      },
+      include: {
+        tree: true,
+      },
+      orderBy: { logDate: 'desc' },
+    })
+  }
+
   // Create new log
   async create(data: CreateTreeLogInput) {
     const logData = {

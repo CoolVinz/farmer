@@ -19,8 +19,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Next.js 15 application for managing tree/farm data called "สวนวิสุทธิ์ศิริ" (Visutthisiri Garden). The app uses:
 
-- **Database**: Supabase PostgreSQL for data storage
-- **Storage**: Supabase Storage for image uploads
+- **Database**: Self-hosted PostgreSQL with Prisma ORM for data storage
+- **Storage**: Self-hosted MinIO (S3-compatible) for image uploads
 - **ORM**: Prisma with type-safe repository pattern
 - **UI**: Tailwind CSS for styling with shadcn/ui components
 - **Charts**: Chart.js with react-chartjs-2 for data visualization
@@ -62,11 +62,13 @@ The application manages several types of data:
 
 ### Configuration
 
-- Supabase configuration via environment variables:
-  - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
-  - `NEXT_PUBLIC_SUPABASE_KEY` - Supabase anonymous key
-  - `DATABASE_URL` - Supabase PostgreSQL connection string
+- Self-hosted infrastructure configuration via environment variables:
+  - `DATABASE_URL` - PostgreSQL connection string
   - `DIRECT_URL` - Direct database connection for migrations
+  - `MINIO_ENDPOINT` - MinIO server endpoint
+  - `MINIO_ACCESS_KEY` - MinIO access key
+  - `MINIO_SECRET_KEY` - MinIO secret key
+  - `MINIO_BUCKET` - MinIO bucket name (default: 'tree-media')
 - TypeScript path mapping: `@/*` maps to root directory
 
 ### Development Notes
@@ -79,7 +81,7 @@ The application manages several types of data:
 ### Recent Enhancements (December 2024)
 
 **Authentication & Security:**
-- Complete Supabase Auth integration with email/password authentication
+- Self-hosted authentication system with email/password authentication
 - Role-based access control (admin vs farm-worker)
 - Protected routes with automatic redirection
 - User session management with React Context
@@ -98,7 +100,8 @@ The application manages several types of data:
 - Real-time toast notifications
 
 **Technical Architecture:**
-- Centralized Supabase client configuration (`/lib/supabase.ts`)
+- Centralized database client configuration (`/lib/prisma.ts`)
+- MinIO storage client configuration (`/lib/minio.ts`)
 - Authentication context provider (`/contexts/AuthContext.tsx`)
 - Protected route components with role checking
 - CSV utility functions for data export/import
@@ -117,20 +120,20 @@ The application manages several types of data:
 - Bulk export all data functionality
 - Improved data type safety
 
-## Supabase Storage Integration (December 2024)
+## MinIO Storage Integration (December 2024)
 
 **Complete Image Upload System:**
-- Full Supabase Storage integration for tree and harvest images
+- Full MinIO (S3-compatible) storage integration for tree and harvest images
 - `SimpleImageUpload` and `ImageUpload` React components with validation
-- Storage utilities (`/lib/storage.ts`) with bucket verification and error handling
+- Storage utilities (`/lib/storage.ts` and `/lib/minio.ts`) with bucket verification and error handling
 - API endpoints for upload (`/api/upload`) and storage management
 - Integrated into tree logging and harvest forms
 
 **Setup Requirements:**
-- **Manual bucket creation required**: Due to RLS policies, create `tree-images` bucket manually in Supabase dashboard
-- See `docs/SUPABASE-STORAGE-SETUP.md` for complete setup instructions
+- **MinIO server setup required**: Configure MinIO server with proper access credentials
+- Environment variables: `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`
 - Storage status API at `/api/storage/status` for diagnostics
-- Automatic bucket verification prevents "bucket not found" errors
+- Automatic bucket creation and verification prevents "bucket not found" errors
 
 **Features:**
 - 10MB file size limit with type validation (JPG, PNG, GIF)

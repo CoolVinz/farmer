@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/lib/supabase";
+import { treeCostRepository } from "@/lib/repositories";
 import { toast } from "react-hot-toast";
 
 interface ActivityCost {
@@ -48,9 +48,9 @@ export default function AddCostLogPage() {
   async function fetchAllData() {
     try {
       const [activitiesResult, plotsResult, costsResult] = await Promise.allSettled([
-        supabase.from("activities_cost").select("*").order("name"),
-        supabase.from("trees").select("location_id").order("location_id"),
-        supabase.from("tree_costs").select("amount, cost_date").order("cost_date", { ascending: false })
+        treeLogRepository.from("activities_cost").select("*").order("name"),
+        treeLogRepository.from("trees").select("location_id").order("location_id"),
+        treeLogRepository.from("tree_costs").select("amount, cost_date").order("cost_date", { ascending: false })
       ]);
 
       if (activitiesResult.status === 'fulfilled' && activitiesResult.value.data) {
@@ -119,7 +119,7 @@ export default function AddCostLogPage() {
 
     try {
       // Insert cost record
-      const { error } = await supabase.from("tree_costs").insert({
+      const { error } = await treeLogRepository.from("tree_costs").insert({
         cost_date: logDate,
         activity_type: finalActivity,
         target: target,

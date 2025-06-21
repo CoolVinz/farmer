@@ -1,4 +1,4 @@
-// Import MinIO functions instead of Supabase
+// Import MinIO functions for storage operations
 import { 
   uploadImage as minioUploadImage,
   deleteImage as minioDeleteImage,

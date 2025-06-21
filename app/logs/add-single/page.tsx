@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SimpleImageUpload } from "@/components/ImageUpload";
-import { supabase } from "@/lib/supabase";
+// Using API routes instead of direct repository calls
 import { toast } from "react-hot-toast";
 
 interface Tree {
@@ -70,25 +70,29 @@ export default function AddSingleLogPage() {
 
   async function fetchAllData() {
     try {
-      const [treesResult, activitiesResult, fertilizersResult, diseasesResult] = await Promise.allSettled([
-        supabase.from("trees").select("id, location_id, tree_number, variety").order("location_id"),
-        supabase.from("activities").select("*").order("name"),
-        supabase.from("fertilizers").select("*").order("name"),
-        supabase.from("plant_diseases").select("*").order("name")
+      const [treesResponse, activitiesData, fertilizersData, diseasesData] = await Promise.all([
+        fetch('/api/trees').then(res => res.json()),
+        fetch('/api/admin/activities').then(res => res.json()),
+        fetch('/api/admin/fertilizers').then(res => res.json()),
+        fetch('/api/admin/diseases').then(res => res.json())
       ]);
 
-      if (treesResult.status === 'fulfilled' && treesResult.value.data) {
-        setTrees(treesResult.value.data);
+      // Handle trees response format
+      let treesData = [];
+      if (treesResponse.success && treesResponse.data) {
+        // Transform tree data to match interface
+        treesData = treesResponse.data.map((tree: any) => ({
+          id: tree.id,
+          location_id: tree.location_id,
+          tree_number: tree.treeNumber?.toString() || '1',
+          variety: tree.variety || ''
+        }));
       }
-      if (activitiesResult.status === 'fulfilled' && activitiesResult.value.data) {
-        setActivities(activitiesResult.value.data);
-      }
-      if (fertilizersResult.status === 'fulfilled' && fertilizersResult.value.data) {
-        setFertilizers(fertilizersResult.value.data);
-      }
-      if (diseasesResult.status === 'fulfilled' && diseasesResult.value.data) {
-        setDiseases(diseasesResult.value.data);
-      }
+      
+      setTrees(treesData);
+      setActivities(activitiesData);
+      setFertilizers(fertilizersData);
+      setDiseases(diseasesData);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
@@ -122,19 +126,24 @@ export default function AddSingleLogPage() {
 
     try {
 
-      // Insert log record
-      const { error } = await supabase.from("tree_logs").insert({
-        tree_id: treeId,
-        log_date: logDate,
-        notes: notes.trim() || null,
-        image_path: imageUrl || null,
-        activity_type: activityType || null,
-        health_status: healthStatus || null,
-        fertilizer_type: fertilizerType || null,
+      // Insert log record via API
+      const response = await fetch('/api/logs/single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          treeId: treeId,
+          logDate: logDate,
+          notes: notes.trim() || undefined,
+          imagePath: imageUrl || undefined,
+          activityType: activityType || undefined,
+          healthStatus: healthStatus || undefined,
+          fertilizerType: fertilizerType || undefined,
+        })
       });
 
-      if (error) {
-        throw new Error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "เกิดข้อผิดพลาดในการบันทึก");
       }
 
       toast.success("บันทึกข้อมูลสำเร็จ! 🎉");

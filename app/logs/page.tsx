@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/repositories";
 import Link from "next/link";
 import { FarmlySidebar } from "@/components/FarmlySidebar";
 import { FarmlyTable, StatusBadge, ActionButton } from "@/components/farmly/FarmlyTable";
 import { FarmlyButton } from "@/components/farmly/FarmlyButton";
-import '../../styles/farmly.css';
 
 import SingleLogSection, { SingleLog } from "../../components/SingleLogSection";
 import BatchLogSection, { BatchLog } from "../../components/BatchLogSection";
