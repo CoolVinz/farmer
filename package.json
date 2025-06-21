@@ -17,6 +17,7 @@
     "pre-push": "bash scripts/pre-push-check.sh"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.832.0",
     "@hookform/resolvers": "^5.1.1",
     "@prisma/client": "^6.10.0",
     "@radix-ui/react-alert-dialog": "^1.1.14",

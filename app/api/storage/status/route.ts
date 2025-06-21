@@ -7,7 +7,16 @@ export async function GET() {
     
     return NextResponse.json({
       success: true,
-      data: status
+      data: {
+        bucketExists: status.bucketExists,
+        bucketName: status.bucketName,
+        endpoint: status.endpoint,
+        totalBuckets: status.bucketExists ? 1 : 0,
+        buckets: status.bucketExists ? [{
+          name: status.bucketName,
+          public: true
+        }] : []
+      }
     })
   } catch (error) {
     console.error('Storage status check error:', error)

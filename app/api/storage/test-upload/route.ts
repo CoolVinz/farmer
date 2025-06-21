@@ -1,65 +1,39 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-
-const BUCKET_NAME = 'tree-media'
+import { testUpload } from '@/lib/storage'
 
 export async function POST() {
   try {
-    // Create a small test file to verify upload functionality
-    const testContent = new Blob(['test-upload-' + Date.now()], { type: 'text/plain' })
-    const testFile = new File([testContent], 'test-upload.txt', { type: 'text/plain' })
+    console.log('🧪 Testing MinIO upload...')
     
-    // Generate unique filename
-    const fileName = `test/upload-test-${Date.now()}.txt`
+    const result = await testUpload()
     
-    console.log(`🧪 Testing upload to bucket: ${BUCKET_NAME}`)
-    
-    // Attempt upload
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .upload(fileName, testFile, {
-        cacheControl: '3600',
-        upsert: false
+    if (result.success) {
+      console.log('✅ Test upload successful:', result)
+      return NextResponse.json({
+        success: true,
+        bucketExists: true,
+        testPerformed: 'minio_upload_test',
+        testFileUrl: result.url,
+        cleanedUp: true,
+        message: 'MinIO bucket is functional for uploads!'
       })
-    
-    if (error) {
-      console.error('Test upload failed:', error)
+    } else {
+      console.error('❌ Test upload failed:', result.error)
       return NextResponse.json({
         success: false,
-        error: error.message,
         bucketExists: false,
-        testPerformed: 'upload_test'
-      })
+        testPerformed: 'minio_upload_test',
+        error: result.error
+      }, { status: 500 })
     }
-    
-    console.log('✅ Test upload successful:', data)
-    
-    // Get public URL to verify
-    const { data: urlData } = supabase.storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(fileName)
-    
-    // Clean up test file
-    const { error: deleteError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove([fileName])
-    
-    return NextResponse.json({
-      success: true,
-      bucketExists: true,
-      testPerformed: 'upload_test',
-      testFileUrl: urlData.publicUrl,
-      cleanedUp: !deleteError,
-      message: 'Bucket is functional for uploads!'
-    })
-    
+
   } catch (error) {
     console.error('Test upload error:', error)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
       bucketExists: false,
-      testPerformed: 'upload_test'
+      testPerformed: 'minio_upload_test',
+      error: error instanceof Error ? error.message : 'Test upload failed'
     }, { status: 500 })
   }
 }

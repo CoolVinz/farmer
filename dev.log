@@ -262,3 +262,68 @@ Minimal bucket creation also failed: [Error [StorageApiError]: new row violates 
  ✓ Compiled in 381ms (1322 modules)
  ✓ Compiled in 239ms (1322 modules)
  ✓ Compiled in 693ms (1322 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/cache/webpack/client-development/15.pack.gz_' -> '/Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/cache/webpack/client-development/15.pack.gz'
+ ✓ Compiled in 1665ms (1322 modules)
+   Reload env: .env
+ ✓ Compiled in 384ms (1308 modules)
+ ✓ Compiled in 329ms (673 modules)
+ ✓ Compiled in 200ms (673 modules)
+ ✓ Compiled in 1757ms (1369 modules)
+ ✓ Compiled in 155ms (1369 modules)
+ ✓ Compiled in 457ms (1369 modules)
+ ✓ Compiled in 1015ms (2018 modules)
+ ✓ Compiled in 951ms (2018 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/paweenwatsrisuk/Desktop/web_proj/next_proj/farmer/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 1052ms (2004 modules)
+ ✓ Compiled /api/storage/test-minio in 449ms (2024 modules)
+🧪 Testing MinIO connection...
+Bucket check failed: NotFound: UnknownError
+    at async checkBucketExists (lib/minio.ts:29:4)
+    at async getStorageStatus (lib/minio.ts:148:25)
+    at async POST (app/api/storage/test-minio/route.ts:9:19)
+  27 | export async function checkBucketExists(): Promise<boolean> {
+  28 |   try {
+> 29 |     await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }))
+     |    ^
+  30 |     return true
+  31 |   } catch (error) {
+  32 |     console.error('Bucket check failed:', error) {
+  '$fault': 'client',
+  '$metadata': [Object]
+}
+📊 Storage status: {
+  bucketExists: false,
+  bucketName: 'tree-media',
+  endpoint: 'https://minio.aivinz.xyz'
+}
+Bucket check failed: NotFound: UnknownError
+    at async checkBucketExists (lib/minio.ts:29:4)
+    at async uploadImage (lib/minio.ts:53:25)
+    at async testUpload (lib/minio.ts:199:19)
+    at async POST (app/api/storage/test-minio/route.ts:13:25)
+  27 | export async function checkBucketExists(): Promise<boolean> {
+  28 |   try {
+> 29 |     await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }))
+     |    ^
+  30 |     return true
+  31 |   } catch (error) {
+  32 |     console.error('Bucket check failed:', error) {
+  '$fault': 'client',
+  '$metadata': [Object]
+}
+✅ Created bucket: tree-media
+📤 Upload test result: {
+  success: true,
+  url: 'https://minio.aivinz.xyz/tree-media/test/1750481411331-xdzjw7nfwpt.txt'
+}
+ POST /api/storage/test-minio 200 in 3452ms
+ ✓ Compiled in 334ms (1369 modules)
+ ✓ Compiled in 377ms (1369 modules)
+ ✓ Compiled in 1462ms (2038 modules)
+ ✓ Compiled /api/storage/test-upload in 109ms (670 modules)
+🧪 Testing MinIO upload...
+✅ Test upload successful: {
+  success: true,
+  url: 'https://minio.aivinz.xyz/tree-media/test/1750481500330-sd24ch8pdj.txt'
+}
+ POST /api/storage/test-upload 200 in 1879ms
