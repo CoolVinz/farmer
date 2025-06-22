@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,12 +40,14 @@ interface Variety {
 
 export default function CreateTreePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [sections, setSections] = useState<Section[]>([]);
   const [plots, setPlots] = useState<Plot[]>([]);
   const [varieties, setVarieties] = useState<Variety[]>([]);
   const [selectedPlot, setSelectedPlot] = useState<string>("");
   const [showCustomVariety, setShowCustomVariety] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState({ sections: false, plots: false });
 
   const [formData, setFormData] = useState({
     sectionId: "",
@@ -61,12 +63,47 @@ export default function CreateTreePage() {
     fetchVarieties();
   }, []);
 
+  // Handle auto-selection when both data sets are loaded
+  useEffect(() => {
+    if (dataLoaded.sections && dataLoaded.plots) {
+      const sectionCodeParam = searchParams.get('sectionCode');
+      if (sectionCodeParam && sections.length > 0) {
+        autoSelectSection(sections, sectionCodeParam);
+      }
+    }
+  }, [dataLoaded.sections, dataLoaded.plots, sections, searchParams]);
+
+  function autoSelectSection(sectionsData: Section[], sectionCode: string) {
+    const targetSection = sectionsData.find(
+      section => section.sectionCode.toUpperCase() === sectionCode.toUpperCase()
+    );
+    
+    if (targetSection) {
+      // Auto-select the plot first
+      setSelectedPlot(targetSection.plot.id);
+      
+      // Auto-select the section
+      setFormData(prev => ({
+        ...prev,
+        sectionId: targetSection.id
+      }));
+      
+      // Show success message
+      toast.success(`เลือกโคก ${targetSection.sectionCode} เรียบร้อยแล้ว! 🎯`);
+    } else {
+      // Show warning if section not found
+      toast.error(`ไม่พบโคก ${sectionCode} ในระบบ`);
+    }
+  }
+
   async function fetchSections() {
     try {
-      const response = await fetch("/api/sections?includePlot=true");
+      // Fetch ALL sections without pagination limit
+      const response = await fetch("/api/sections?includePlot=true&limit=1000");
       const result = await response.json();
       if (result.success) {
         setSections(result.data);
+        setDataLoaded(prev => ({ ...prev, sections: true }));
       }
     } catch (error) {
       console.error("Error fetching sections:", error);
@@ -80,6 +117,7 @@ export default function CreateTreePage() {
       const result = await response.json();
       if (result.success) {
         setPlots(result.data);
+        setDataLoaded(prev => ({ ...prev, plots: true }));
       }
     } catch (error) {
       console.error("Error fetching plots:", error);
