@@ -121,7 +121,8 @@ export default function TreesPage() {
 
   async function fetchSections() {
     try {
-      const response = await fetch('/api/sections')
+      // Include plot data and remove pagination limit to get all sections
+      const response = await fetch('/api/sections?includePlot=true&limit=1000')
       const result = await response.json()
       if (result.success) {
         setSections(result.data)
@@ -219,7 +220,7 @@ export default function TreesPage() {
   }
 
   const filteredSections = selectedPlot && selectedPlot !== 'all'
-    ? sections.filter(section => section.plot.id === selectedPlot)
+    ? sections.filter(section => section.plot?.id === selectedPlot)
     : sections
 
   if (loading) {
