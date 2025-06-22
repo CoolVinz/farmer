@@ -60,9 +60,19 @@ export default function LogsPage() {
       if (!response.ok) {
         throw new Error('Failed to fetch batch logs');
       }
-      const { logs, total } = await response.json();
-      setBatchLogs(logs);
-      setBatchTotal(total);
+      const responseData = await response.json();
+      
+      // Handle new API response format { success, data, total } vs old format { logs, total }
+      if (responseData.success && responseData.data) {
+        setBatchLogs(responseData.data);
+        setBatchTotal(responseData.total);
+      } else if (responseData.logs) {
+        // Fallback for old format
+        setBatchLogs(responseData.logs);
+        setBatchTotal(responseData.total);
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (error) {
       console.error('Error fetching batch logs:', error);
       setBatchLogs([]);
