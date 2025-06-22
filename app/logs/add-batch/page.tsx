@@ -70,7 +70,11 @@ export default function AddBatchLogPage() {
         const plotsResponse = await fetch('/api/plots');
         if (plotsResponse.ok) {
           const plotsData = await plotsResponse.json();
-          setPlots(plotsData);
+          if (plotsData.success && Array.isArray(plotsData.data)) {
+            setPlots(plotsData.data);
+          } else {
+            throw new Error('Invalid plots data structure');
+          }
         }
       } catch (plotError) {
         console.warn('Plots API not available, using fallback data');
