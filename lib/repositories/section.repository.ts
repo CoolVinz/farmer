@@ -6,6 +6,9 @@ export interface CreateSectionInput {
   description?: string
   area?: number
   soilType?: string
+  imagePath?: string
+  xCoordinate?: number
+  yCoordinate?: number
 }
 
 export interface UpdateSectionInput {
@@ -13,6 +16,9 @@ export interface UpdateSectionInput {
   description?: string
   area?: number
   soilType?: string
+  imagePath?: string
+  xCoordinate?: number
+  yCoordinate?: number
 }
 
 export class SectionRepository {
@@ -203,10 +209,10 @@ export class SectionRepository {
 
   // Create new section
   async create(data: CreateSectionInput) {
-    // Get the plot to generate section code
+    // Get the plot to generate section code and spacing info
     const plot = await prisma.plot.findUnique({
       where: { id: data.plotId },
-      select: { code: true }
+      select: { code: true, sectionSpacing: true }
     })
 
     if (!plot) {
@@ -215,7 +221,20 @@ export class SectionRepository {
 
     // Get next section number for this plot
     const nextSectionNumber = await this.getNextSectionNumber(data.plotId)
-    const sectionCode = `${plot.code}${nextSectionNumber}`
+    const sectionCode = `${plot.code}${nextSectionNumber.toString().padStart(2, '0')}` // A01, A02, etc.
+
+    // Auto-calculate coordinates if not provided
+    let xCoordinate = data.xCoordinate
+    let yCoordinate = data.yCoordinate
+    
+    if (xCoordinate === undefined || yCoordinate === undefined) {
+      const coords = this.calculateSectionCoordinates(
+        nextSectionNumber, 
+        plot.sectionSpacing || 'FOUR_BY_FOUR'
+      )
+      xCoordinate = coords.xCoordinate
+      yCoordinate = coords.yCoordinate
+    }
 
     return prisma.section.create({
       data: {
@@ -226,6 +245,9 @@ export class SectionRepository {
         description: data.description,
         area: data.area,
         soilType: data.soilType,
+        imagePath: data.imagePath,
+        xCoordinate,
+        yCoordinate,
       },
       include: {
         plot: true
@@ -242,6 +264,9 @@ export class SectionRepository {
         description: data.description,
         area: data.area,
         soilType: data.soilType,
+        imagePath: data.imagePath,
+        xCoordinate: data.xCoordinate,
+        yCoordinate: data.yCoordinate,
       },
       include: {
         plot: true
@@ -438,5 +463,29 @@ export class SectionRepository {
     return prisma.section.count({
       where: whereClause
     })
+  }
+
+  // Calculate section coordinates based on plot spacing
+  calculateSectionCoordinates(
+    sectionNumber: number, 
+    spacing: 'FOUR_BY_FOUR' | 'TEN_BY_TEN', 
+    plotLayout?: { rows: number, cols: number }
+  ) {
+    const spacingMeters = spacing === 'FOUR_BY_FOUR' ? 4 : 10
+    const layout = plotLayout || { rows: 10, cols: 10 } // Default 10x10 grid
+    
+    // Convert section number to row/col (1-based to 0-based)
+    const row = Math.floor((sectionNumber - 1) / layout.cols)
+    const col = (sectionNumber - 1) % layout.cols
+    
+    return {
+      xCoordinate: col * spacingMeters,
+      yCoordinate: row * spacingMeters
+    }
+  }
+
+  // Get spacing description for display
+  getSpacingDescription(spacing: 'FOUR_BY_FOUR' | 'TEN_BY_TEN'): string {
+    return spacing === 'FOUR_BY_FOUR' ? '4×4 เมตร' : '10×10 เมตร'
   }
 }

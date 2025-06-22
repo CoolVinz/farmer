@@ -8,6 +8,7 @@ export const createTreeSchema = z.object({
   status: z.string().optional().default('alive'),
   bloomingStatus: z.enum(['blooming', 'not_blooming', 'budding']).optional().default('not_blooming'),
   fruitCount: z.number().int().min(0, 'Fruit count must be non-negative').optional(),
+  imagePath: z.string().optional(),
 })
 
 export const updateTreeSchema = createTreeSchema.omit({ sectionId: true }).partial()
@@ -16,7 +17,9 @@ export const updateTreeSchema = createTreeSchema.omit({ sectionId: true }).parti
 export const createPlotSchema = z.object({
   code: z.string().length(1, 'Plot code must be a single character (A, B, C)').regex(/^[A-C]$/i, 'Plot code must be A, B, or C'),
   name: z.string().min(1, 'Plot name is required'),
+  owner: z.string().optional(),
   area: z.number().positive('Area must be positive').optional(),
+  sectionSpacing: z.enum(['FOUR_BY_FOUR', 'TEN_BY_TEN']).optional().default('FOUR_BY_FOUR'),
   soilType: z.string().optional(),
   description: z.string().optional(),
 })
@@ -30,6 +33,9 @@ export const createSectionSchema = z.object({
   description: z.string().optional(),
   area: z.number().positive('Area must be positive').optional(),
   soilType: z.string().optional(),
+  imagePath: z.string().optional(),
+  xCoordinate: z.number().optional(),
+  yCoordinate: z.number().optional(),
 })
 
 export const updateSectionSchema = createSectionSchema.omit({ plotId: true }).partial()

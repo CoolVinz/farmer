@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
               id: plot.id,
               code: plot.code,
               name: plot.name,
+              owner: plot.owner,
               area: plot.area,
+              sectionSpacing: plot.sectionSpacing,
               description: plot.description,
               sectionCount: sections.length,
               treeCount: treeCount
@@ -34,7 +36,9 @@ export async function GET(request: NextRequest) {
               id: plot.id,
               code: plot.code,
               name: plot.name,
+              owner: plot.owner,
               area: plot.area,
+              sectionSpacing: plot.sectionSpacing,
               description: plot.description,
               ...fallbackCounts
             }
@@ -60,7 +64,9 @@ export async function GET(request: NextRequest) {
       { 
         id: '1', 
         code: 'A', 
-        name: 'Garden Plot A', 
+        name: 'Garden Plot A',
+        owner: null,
+        sectionSpacing: 'FOUR_BY_FOUR',
         sectionCount: 61, 
         treeCount: 98,
         area: null,
@@ -69,7 +75,9 @@ export async function GET(request: NextRequest) {
       { 
         id: '2', 
         code: 'B', 
-        name: 'Garden Plot B', 
+        name: 'Garden Plot B',
+        owner: null,
+        sectionSpacing: 'FOUR_BY_FOUR',
         sectionCount: 0, 
         treeCount: 0,
         area: null,
@@ -78,7 +86,9 @@ export async function GET(request: NextRequest) {
       { 
         id: '3', 
         code: 'C', 
-        name: 'Garden Plot C', 
+        name: 'Garden Plot C',
+        owner: null,
+        sectionSpacing: 'FOUR_BY_FOUR',
         sectionCount: 0, 
         treeCount: 0,
         area: null,
@@ -91,5 +101,41 @@ export async function GET(request: NextRequest) {
       data: fallbackPlots,
       fallback: true
     })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    
+    // Validate required fields
+    if (!body.code || !body.name) {
+      return Response.json(
+        { error: 'Code and name are required' },
+        { status: 400 }
+      )
+    }
+
+    // Create new plot
+    const plot = await plotRepository.create({
+      code: body.code,
+      name: body.name,
+      owner: body.owner,
+      area: body.area,
+      sectionSpacing: body.sectionSpacing || 'FOUR_BY_FOUR',
+      soilType: body.soilType,
+      description: body.description
+    })
+
+    return Response.json({
+      success: true,
+      data: plot
+    })
+  } catch (error) {
+    console.error('Error creating plot:', error)
+    return Response.json(
+      { error: 'Failed to create plot' },
+      { status: 500 }
+    )
   }
 }

@@ -189,6 +189,8 @@ export class TreeRepository {
       status: data.status || 'alive',
       bloomingStatus: data.bloomingStatus || 'not_blooming',
       plantedDate: data.datePlanted ? new Date(data.datePlanted) : undefined,
+      fruitCount: data.fruitCount || 0,
+      imagePath: data.imagePath,
     }
     
     return prisma.tree.create({
@@ -212,6 +214,7 @@ export class TreeRepository {
     if (data.bloomingStatus) updateData.bloomingStatus = data.bloomingStatus
     if (data.datePlanted) updateData.plantedDate = new Date(data.datePlanted)
     if (data.fruitCount !== undefined) updateData.fruitCount = data.fruitCount
+    if (data.imagePath !== undefined) updateData.imagePath = data.imagePath
 
     return prisma.tree.update({
       where: { id },

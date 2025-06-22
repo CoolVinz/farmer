@@ -3,14 +3,18 @@ import { prisma } from '../prisma'
 export interface CreatePlotInput {
   code: string
   name: string
+  owner?: string
   area?: number
+  sectionSpacing?: 'FOUR_BY_FOUR' | 'TEN_BY_TEN'
   soilType?: string
   description?: string
 }
 
 export interface UpdatePlotInput {
   name?: string
+  owner?: string
   area?: number
+  sectionSpacing?: 'FOUR_BY_FOUR' | 'TEN_BY_TEN'
   soilType?: string
   description?: string
 }
@@ -137,7 +141,9 @@ export class PlotRepository {
       data: {
         code: data.code.toUpperCase(),
         name: data.name,
+        owner: data.owner,
         area: data.area,
+        sectionSpacing: data.sectionSpacing || 'FOUR_BY_FOUR',
         soilType: data.soilType,
         description: data.description,
       }
@@ -150,7 +156,9 @@ export class PlotRepository {
       where: { id },
       data: {
         name: data.name,
+        owner: data.owner,
         area: data.area,
+        sectionSpacing: data.sectionSpacing,
         soilType: data.soilType,
         description: data.description,
       }
@@ -300,6 +308,26 @@ export class PlotRepository {
       }
     })
     return treeCount
+  }
+
+  // Calculate section coordinates based on plot spacing
+  calculateSectionCoordinates(sectionNumber: number, spacing: 'FOUR_BY_FOUR' | 'TEN_BY_TEN', plotLayout?: { rows: number, cols: number }) {
+    const spacingMeters = spacing === 'FOUR_BY_FOUR' ? 4 : 10
+    const layout = plotLayout || { rows: 10, cols: 10 } // Default 10x10 grid
+    
+    // Convert section number to row/col (1-based to 0-based)
+    const row = Math.floor((sectionNumber - 1) / layout.cols)
+    const col = (sectionNumber - 1) % layout.cols
+    
+    return {
+      xCoordinate: col * spacingMeters,
+      yCoordinate: row * spacingMeters
+    }
+  }
+
+  // Get spacing in meters for a plot
+  getSpacingMeters(spacing: 'FOUR_BY_FOUR' | 'TEN_BY_TEN'): number {
+    return spacing === 'FOUR_BY_FOUR' ? 4 : 10
   }
 
   // Private helper methods

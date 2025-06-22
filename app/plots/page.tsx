@@ -5,9 +5,14 @@ import Link from 'next/link'
 import { AgriTrackSidebar } from '@/components/AgriTrackSidebar'
 
 interface PlotSummary {
-  plotId: string
-  plotCode: string
-  plotName: string
+  id: string
+  code: string
+  name: string
+  owner?: string
+  sectionSpacing?: 'FOUR_BY_FOUR' | 'TEN_BY_TEN'
+  area?: number
+  description?: string
+  sectionCount: number
   treeCount: number
 }
 
@@ -16,34 +21,25 @@ export default function PlotsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // This would use PlotRepository when database is available
-    // For now, show example data structure
-    const examplePlots: PlotSummary[] = [
-      {
-        plotId: '1',
-        plotCode: 'A',
-        plotName: 'Garden Plot A',
-        treeCount: 60
-      },
-      {
-        plotId: '2', 
-        plotCode: 'B',
-        plotName: 'Garden Plot B',
-        treeCount: 45
-      },
-      {
-        plotId: '3',
-        plotCode: 'C', 
-        plotName: 'Garden Plot C',
-        treeCount: 35
-      }
-    ]
-    
-    setTimeout(() => {
-      setPlots(examplePlots)
-      setLoading(false)
-    }, 1000)
+    fetchPlots()
   }, [])
+
+  async function fetchPlots() {
+    try {
+      const response = await fetch('/api/plots?includeTreeCount=true')
+      const result = await response.json()
+      
+      if (result.success) {
+        setPlots(result.data)
+      } else {
+        console.error('Failed to fetch plots:', result.error)
+      }
+    } catch (error) {
+      console.error('Error fetching plots:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -118,15 +114,17 @@ export default function PlotsPage() {
               <h2 className="text-[var(--text-primary)] text-[22px] font-bold leading-tight tracking-[-0.015em] pb-4">Farm Layout</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {plots.map((plot) => (
-                  <div key={plot.plotId} className="rounded-xl p-6 border border-[var(--border-color)] bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <div key={plot.id} className="rounded-xl p-6 border border-[var(--border-color)] bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-[var(--secondary-color)] rounded-lg flex items-center justify-center">
-                          <span className="text-[var(--primary-color)] text-xl font-bold">{plot.plotCode}</span>
+                          <span className="text-[var(--primary-color)] text-xl font-bold">{plot.code}</span>
                         </div>
                         <div>
-                          <h3 className="text-[var(--text-primary)] text-lg font-semibold">{plot.plotName}</h3>
-                          <p className="text-[var(--text-secondary)] text-sm">แปลงสวนทุเรียน</p>
+                          <h3 className="text-[var(--text-primary)] text-lg font-semibold">{plot.name}</h3>
+                          <p className="text-[var(--text-secondary)] text-sm">
+                            {plot.owner ? `เจ้าของ: ${plot.owner}` : 'แปลงสวนทุเรียน'}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -137,8 +135,14 @@ export default function PlotsPage() {
                         <span className="text-[var(--text-primary)] font-semibold">{plot.treeCount} ต้น</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-[var(--text-secondary)] text-sm">รหัสต้น</span>
-                        <span className="text-[var(--text-primary)] font-semibold">{plot.plotCode}1 - {plot.plotCode}{plot.treeCount}</span>
+                        <span className="text-[var(--text-secondary)] text-sm">จำนวนโซน</span>
+                        <span className="text-[var(--text-primary)] font-semibold">{plot.sectionCount} โซน</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[var(--text-secondary)] text-sm">ระยะห่างโซน</span>
+                        <span className="text-[var(--text-primary)] font-semibold">
+                          {plot.sectionSpacing === 'FOUR_BY_FOUR' ? '4×4 เมตร' : '10×10 เมตร'}
+                        </span>
                       </div>
                     </div>
 
@@ -148,20 +152,20 @@ export default function PlotsPage() {
                       <div className="flex flex-wrap gap-1">
                         {[1, 2, 3, 4, 5].map(num => (
                           <span key={num} className="inline-block bg-[var(--secondary-color)] text-[var(--primary-color)] text-xs px-2 py-1 rounded">
-                            {plot.plotCode}{num}
+                            {plot.code}{num.toString().padStart(2, '0')}
                           </span>
                         ))}
-                        {plot.treeCount > 5 && (
+                        {plot.sectionCount > 5 && (
                           <span className="text-[var(--text-secondary)] text-xs px-2 py-1">
-                            ... {plot.plotCode}{plot.treeCount}
+                            ... {plot.code}{plot.sectionCount.toString().padStart(2, '0')}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <Link href={`/plots/${plot.plotCode.toLowerCase()}`}>
+                    <Link href={`/plots/${plot.code.toLowerCase()}`}>
                       <button className="w-full bg-[var(--primary-color)] text-white py-2 rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-colors duration-200">
-                        ดูรายละเอียดแปลง {plot.plotCode}
+                        ดูรายละเอียดแปลง {plot.code}
                       </button>
                     </Link>
                   </div>
