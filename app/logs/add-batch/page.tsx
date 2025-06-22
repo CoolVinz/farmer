@@ -105,18 +105,23 @@ export default function AddBatchLogPage() {
     setSubmitting(true);
 
     try {
-      // Insert batch log record
-      const { error } = await supabase.from("batch_logs").insert({
-        plot_id: finalPlot,
-        log_date: logDate,
-        activity_id: activityType || null,
-        notes: notes.trim() || null,
-        fertilizer_name: fertilizerType || null,
-        application_method: applicationMethod || null,
+      // Insert batch log record via API
+      const response = await fetch('/api/logs/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plot_id: finalPlot,
+          log_date: logDate,
+          activity_id: activityType || null,
+          notes: notes.trim() || null,
+          fertilizer_name: fertilizerType || null,
+          application_method: applicationMethod || null,
+        })
       });
 
-      if (error) {
-        throw new Error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
       }
 
       toast.success(`บันทึกทั้งแปลง ${finalPlot} สำเร็จ! 🎉`);

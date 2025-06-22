@@ -27,7 +27,7 @@ if (!MINIO_SECRET_KEY) {
 function createS3Client(): S3Client | null {
   if (!MINIO_ENDPOINT || !MINIO_ACCESS_KEY || !MINIO_SECRET_KEY) {
     console.error('❌ MinIO configuration incomplete - missing environment variables:', {
-      endpoint: MINIO_ENDPOINT ? '✅ Set' : '❌ Missing',
+      endpoint: MINIO_ENDPOINT || 'not-configured' ? '✅ Set' : '❌ Missing',
       accessKey: MINIO_ACCESS_KEY ? '✅ Set' : '❌ Missing',
       secretKey: MINIO_SECRET_KEY ? '✅ Set' : '❌ Missing',
     })
@@ -36,7 +36,7 @@ function createS3Client(): S3Client | null {
 
   try {
     const client = new S3Client({
-      endpoint: MINIO_ENDPOINT,
+      endpoint: MINIO_ENDPOINT || 'not-configured',
       region: 'us-east-1', // MinIO requires a region, but it's not used
       credentials: {
         accessKeyId: MINIO_ACCESS_KEY,
@@ -81,7 +81,7 @@ export async function checkBucketExists(): Promise<boolean> {
       name: error.name,
       code: error.Code || error.code,
       statusCode: error.$metadata?.httpStatusCode,
-      endpoint: MINIO_ENDPOINT,
+      endpoint: MINIO_ENDPOINT || 'not-configured',
       requestId: error.$metadata?.requestId,
       cfId: error.$metadata?.cfId,
       // Additional debugging info
@@ -108,7 +108,7 @@ export async function createBucket(): Promise<boolean> {
       message: error.message,
       code: error.Code || error.code,
       statusCode: error.$metadata?.httpStatusCode,
-      endpoint: MINIO_ENDPOINT
+      endpoint: MINIO_ENDPOINT || 'not-configured'
     })
     return false
   }
@@ -161,7 +161,7 @@ export async function uploadImage(file: File, folder: string = 'logs'): Promise<
     })
 
     console.log(`📤 Uploading to MinIO: ${fileName}`)
-    await s3Client.send(command)
+    await s3Client!.send(command)
     console.log(`✅ Upload successful: ${fileName}`)
 
     // Construct public URL
@@ -177,9 +177,8 @@ export async function uploadImage(file: File, folder: string = 'logs'): Promise<
       name: error.name,
       code: error.Code || error.code,
       statusCode: error.$metadata?.httpStatusCode,
-      endpoint: MINIO_ENDPOINT,
+      endpoint: MINIO_ENDPOINT || 'not-configured',
       bucketName: BUCKET_NAME,
-      fileName: fileName,
       fileSize: file.size,
       // Additional debugging info
       stack: error.stack?.split('\n')[0] // First line of stack trace
@@ -205,7 +204,7 @@ export async function deleteImage(imagePath: string): Promise<boolean> {
       Key: fileName,
     })
 
-    await s3Client.send(command)
+    await s3Client!.send(command)
     return true
   } catch (error) {
     console.error('Delete failed:', error)
@@ -245,13 +244,13 @@ export async function getStorageStatus(): Promise<{
     return {
       bucketExists,
       bucketName: BUCKET_NAME,
-      endpoint: MINIO_ENDPOINT
+      endpoint: MINIO_ENDPOINT || 'not-configured'
     }
   } catch (error) {
     return {
       bucketExists: false,
       bucketName: BUCKET_NAME,
-      endpoint: MINIO_ENDPOINT,
+      endpoint: MINIO_ENDPOINT || 'not-configured',
       error: error instanceof Error ? error.message : 'Unknown error'
     }
   }

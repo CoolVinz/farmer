@@ -2,13 +2,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/repositories";
 import Link from "next/link";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_KEY!
-);
+// Using API routes instead of direct database access
 
 export default function CostReportPage() {
   const [costs, setCosts] = useState<any[]>([]);
@@ -22,11 +17,17 @@ export default function CostReportPage() {
   }, []);
 
   async function fetchCosts() {
-    const { data } = await supabase
-      .from("tree_costs")
-      .select("*")
-      .order("cost_date", { ascending: false });
-    setCosts(data || []);
+    try {
+      const response = await fetch('/api/logs/cost');
+      if (!response.ok) {
+        throw new Error('Failed to fetch costs');
+      }
+      const { logs } = await response.json();
+      setCosts(logs || []);
+    } catch (error) {
+      console.error('Error fetching costs:', error);
+      setCosts([]);
+    }
     setLoading(false);
   }
 

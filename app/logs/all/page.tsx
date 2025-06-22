@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { treeLogRepository } from "@/lib/repositories";
+// Using API routes instead of direct repository access
 import Link from "next/link";
 import Image from "next/image";
 import { Navigation } from "@/components/Navigation";
@@ -20,19 +20,30 @@ export default function LogsListPage() {
   }, [currentPage, filter]);
 
   async function fetchLogs() {
-    let baseQuery = supabase.from("tree_logs").select("*", { count: "exact" });
-
-    if (filter) {
-      baseQuery = baseQuery.ilike("tree_id", `%${filter}%`);
+    try {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: PAGE_SIZE.toString()
+      });
+      
+      if (filter) {
+        params.append('filter', filter);
+      }
+      
+      const response = await fetch(`/api/logs/single?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch logs');
+      }
+      
+      const { logs, total } = await response.json();
+      setLogs(logs);
+      setTotalLogs(total);
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+      setLogs([]);
+      setTotalLogs(0);
     }
-
-    const from = (currentPage - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-
-    const { data, count } = await baseQuery.range(from, to);
-
-    if (data) setLogs(data);
-    if (count !== null) setTotalLogs(count);
+    // Function ends here - old code removed
   }
 
   function handlePageChange(newPage: number) {
