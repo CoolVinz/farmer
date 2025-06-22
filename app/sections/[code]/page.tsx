@@ -614,7 +614,7 @@ export default function SectionDetailPage() {
                               className="w-full"
                               asChild
                             >
-                              <Link href={`/trees/${tree.id}`}>
+                              <Link href={`/trees/${tree.treeCode}`}>
                                 👁️ ดูต้นไม้
                               </Link>
                             </Button>
@@ -624,7 +624,7 @@ export default function SectionDetailPage() {
                               className="w-full"
                               asChild
                             >
-                              <Link href={`/trees/${tree.id}/edit`}>
+                              <Link href={`/trees/${tree.treeCode}/edit`}>
                                 ✏️ แก้ไขต้นไม้
                               </Link>
                             </Button>

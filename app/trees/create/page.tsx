@@ -161,7 +161,7 @@ export default function CreateTreePage() {
 
       if (result.success) {
         toast.success("เพิ่มต้นไม้เรียบร้อยแล้ว");
-        router.push(`/trees/${result.data.id}`);
+        router.push(`/trees/${result.data.treeCode}`);
       } else {
         toast.error(result.error || "ไม่สามารถเพิ่มต้นไม้ได้");
       }

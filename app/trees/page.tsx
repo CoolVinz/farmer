@@ -367,7 +367,7 @@ export default function TreesPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => router.push(`/trees/${tree.id}`)}
+                    onClick={() => router.push(`/trees/${tree.treeCode}`)}
                     className="flex-1"
                   >
                     👁️ ดู
@@ -375,7 +375,7 @@ export default function TreesPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => router.push(`/trees/${tree.id}/edit`)}
+                    onClick={() => router.push(`/trees/${tree.treeCode}/edit`)}
                     className="flex-1"
                   >
                     ✏️ แก้ไข

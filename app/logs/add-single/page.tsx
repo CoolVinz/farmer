@@ -14,6 +14,7 @@ import { toast } from "react-hot-toast";
 
 interface Tree {
   id: string;
+  treeCode: string;
   location_id: string;
   tree_number: string;
   variety: string;
@@ -60,13 +61,24 @@ export default function AddSingleLogPage() {
     fetchAllData();
     // Set default date to today
     setLogDate(new Date().toISOString().split("T")[0]);
-    
-    // Auto-select tree if treeId is provided in URL
+  }, []);
+
+  // Handle tree auto-selection after trees are loaded
+  useEffect(() => {
     const urlTreeId = searchParams.get('treeId');
+    const urlTreeCode = searchParams.get('treeCode');
+    
     if (urlTreeId) {
       setTreeId(urlTreeId);
+    } else if (urlTreeCode && trees.length > 0) {
+      // Find tree by tree code and set its ID
+      const tree = trees.find(t => t.treeCode === urlTreeCode);
+      if (tree) {
+        setTreeId(tree.id);
+        toast.success(`เลือกต้นไม้ ${urlTreeCode} เรียบร้อยแล้ว`);
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, trees]);
 
   async function fetchAllData() {
     try {
@@ -83,6 +95,7 @@ export default function AddSingleLogPage() {
         // Transform tree data to match interface
         treesData = treesResponse.data.map((tree: any) => ({
           id: tree.id,
+          treeCode: tree.treeCode,
           location_id: tree.location_id,
           tree_number: tree.treeNumber?.toString() || '1',
           variety: tree.variety || ''
