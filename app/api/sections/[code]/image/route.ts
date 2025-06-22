@@ -4,9 +4,9 @@ import { uploadImage } from '@/lib/minio'
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ code: string }> }
 ) {
-  const { id } = await params
+  const { code } = await params
   try {
     const formData = await request.formData()
     const file = formData.get('image') as File
@@ -36,8 +36,18 @@ export async function POST(
       )
     }
 
+    // Find section by code first
+    const existingSection = await sectionRepository.findBySectionCode(code)
+    
+    if (!existingSection) {
+      return NextResponse.json(
+        { error: `Section ${code} not found` },
+        { status: 404 }
+      )
+    }
+
     // Update section with image path
-    const section = await sectionRepository.update(id, {
+    const section = await sectionRepository.update(existingSection.id, {
       imagePath: uploadResult.url
     })
 
@@ -57,12 +67,22 @@ export async function POST(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ code: string }> }
 ) {
-  const { id } = await params
+  const { code } = await params
   try {
+    // Find section by code first
+    const existingSection = await sectionRepository.findBySectionCode(code)
+    
+    if (!existingSection) {
+      return NextResponse.json(
+        { error: `Section ${code} not found` },
+        { status: 404 }
+      )
+    }
+
     // Remove image path from section
-    const section = await sectionRepository.update(id, {
+    const section = await sectionRepository.update(existingSection.id, {
       imagePath: undefined
     })
 

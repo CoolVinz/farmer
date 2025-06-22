@@ -47,6 +47,10 @@ export default function SectionDetailPage() {
   const [saving, setSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+  
+  // Delete section state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Form state for editing
   const [editForm, setEditForm] = useState({
@@ -205,6 +209,38 @@ export default function SectionDetailPage() {
     setEditing(false);
   }
 
+  // Handle delete section
+  async function handleDelete() {
+    if (!section) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/sections/${sectionCode}`, {
+        method: 'DELETE'
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(`ลบโคก ${sectionCode} สำเร็จ! 🗑️`);
+        setShowDeleteModal(false);
+        // Navigate back to sections page
+        router.push('/sections');
+      } else {
+        throw new Error(result.error || 'Delete failed');
+      }
+    } catch (error) {
+      console.error('Error deleting section:', error);
+      toast.error('เกิดข้อผิดพลาดในการลบโคก');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  function handleCancelDelete() {
+    setShowDeleteModal(false);
+  }
+
   // Calculate pagination for trees
   const totalPages = Math.ceil(trees.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -314,15 +350,25 @@ export default function SectionDetailPage() {
             
             <div className="flex items-center gap-3">
               {!editing ? (
-                <Button 
-                  onClick={() => {
-                    console.log('Edit button clicked');
-                    setEditing(true);
-                  }} 
-                  variant="outline"
-                >
-                  ✏️ แก้ไขข้อมูล
-                </Button>
+                <>
+                  <Button 
+                    onClick={() => {
+                      console.log('Edit button clicked');
+                      setEditing(true);
+                    }} 
+                    variant="outline"
+                  >
+                    ✏️ แก้ไขข้อมูล
+                  </Button>
+                  <Button 
+                    onClick={() => setShowDeleteModal(true)}
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                    disabled={deleting}
+                  >
+                    🗑️ ลบโคก
+                  </Button>
+                </>
               ) : (
                 <div className="flex items-center gap-2">
                   <Button 
@@ -637,6 +683,70 @@ export default function SectionDetailPage() {
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-red-600">🗑️ ลบโคก {section?.sectionCode}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-gray-700">
+                <p className="mb-3">
+                  คุณแน่ใจหรือไม่ที่จะลบโคก <strong>{section?.sectionCode}</strong>?
+                </p>
+                
+                {section?.name && (
+                  <div className="mb-2">
+                    <span className="text-sm text-gray-600">ชื่อโคก:</span>
+                    <p className="font-medium">{section.name}</p>
+                  </div>
+                )}
+                
+                <div className="mb-3">
+                  <span className="text-sm text-gray-600">จำนวนต้นไม้:</span>
+                  <p className="font-medium">{trees.length} ต้น</p>
+                </div>
+
+                {trees.length > 0 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                    <div className="flex items-start gap-2">
+                      <span className="text-yellow-600 mt-0.5">⚠️</span>
+                      <div className="text-sm text-yellow-800">
+                        <p className="font-medium mb-1">คำเตือน!</p>
+                        <p>โคกนี้มีต้นไม้ {trees.length} ต้น การลบโคกจะลบข้อมูลต้นไม้ทั้งหมดด้วย</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-sm text-red-600 font-medium">
+                  การดำเนินการนี้ไม่สามารถย้อนกลับได้!
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  onClick={handleCancelDelete}
+                  variant="outline"
+                  disabled={deleting}
+                  className="flex-1"
+                >
+                  ยกเลิก
+                </Button>
+                <Button 
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {deleting ? 'กำลังลบ...' : '🗑️ ลบโคก'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
