@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Navigation } from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -234,7 +235,9 @@ export default function TreesPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="relative flex size-full min-h-screen flex-col bg-[#f9fbf9] text-[#121a0f]">
+      <Navigation />
+      <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">🌳 จัดการต้นไม้</h1>
@@ -474,6 +477,7 @@ export default function TreesPage() {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   )
 }
